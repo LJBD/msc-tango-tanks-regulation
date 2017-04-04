@@ -1,44 +1,51 @@
-model 3Tanks
-    parameter Modelica.SIUnits.Length a = 31.0 "1st tank's width";
-    parameter Modelica.SIUnits.Lenght b = 40.0 "2nd tank's triangular part's width";
-    parameter Modelica.SIUnits.Lenght c = 10.0 "2nd tank's rectangular part's width";
-    parameter Modelica.SIUnits.Lenght R = 40.0 "3rd tank's side's radius";
-    parameter Modelica.SIUnits.Lenght w = 5.0 "Tanks' depth";
-    parameter Modelica.SIUnits.Lenght h_max = 40.0 "Maximum height of liquid in tanks";
+within ;
+package TanksPkg
+    model ThreeTanks
+        parameter Modelica.SIunits.Length a = 31.0 "1st tank's width";
+        parameter Modelica.SIunits.Length b = 40.0 "2nd tank's triangular part's width";
+        parameter Modelica.SIunits.Length c = 10.0 "2nd tank's rectangular part's width";
+        parameter Modelica.SIunits.Length R = 40.0 "3rd tank's side's radius";
+        parameter Modelica.SIunits.Length w = 5.0 "Tanks' depth";
+        parameter Modelica.SIunits.Length h_max = 40.0 "Maximum height of liquid in tanks";
 
-    parameter Modelica.SIunits.VolumeFlowRate C1 = 10.0 "1st tank's outflow rate";
-    parameter Modelica.SIunits.VolumeFlowRate C2 = 10.0 "2nd tank's outflow rate";
-    parameter Modelica.SIunits.VolumeFlowRate C3 = 10.0 "3rd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C1 = 10.0 "1st tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C2 = 10.0 "2nd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C3 = 10.0 "3rd tank's outflow rate";
 
-    Real h1(start=h10);
-    Real h2(start=h20);
-    Real h3(start=h30);
+        parameter Modelica.SIunits.Length h10 = 10.0 "1st tank's initial value";
+        parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
+        parameter Modelica.SIunits.Length h30 = 10.0 "3rd tank's initial value";
 
-    Input Real u;
-equation
-    der(h1)=(u - C1*sqrt(h1))/a*w;
-    der(h2)=(C1*sqrt(h1) - C2*sqrt(h2))/(c*w + h2*b*w/h_max);
-    der(h3)=(C2*sqrt(h2) - C3*sqrt(h3))/(w*sqrt(R^2 - (R - h3)^2));
-end 3Tanks;
+        Real h1(start=h10);
+        Real h2(start=h20);
+        Real h3(start=h30);
 
-optimization 3_tanks_time_optimal(objective=finalTime, startTime=0, finalTime(free=true,initialGuess=10))
-    extends 3Tanks(u(free=true, initialGuess = 0.0));
+        Modelica.Blocks.Interfaces.RealInput u;
+    equation
+        der(h1)=(u - C1*sqrt(h1))/a*w;
+        der(h2)=(C1*sqrt(h1) - C2*sqrt(h2))/(c*w + h2*b*w/h_max);
+        der(h3)=(C2*sqrt(h2) - C3*sqrt(h3))/(w*sqrt(R^2 - (R - h3)^2));
+    end ThreeTanks;
 
-    parameter Real h1_final = 10.0;
-    parameter Real h2_final = 10.0;
-    parameter Real h3_final = 20.0;
-    parameter Real u_max = 10.0;
+    optimization three_tanks_time_optimal(objective=finalTime, startTime=0, finalTime(free=true,initialGuess=10))
+        extends ThreeTanks(u(free=true, initialGuess = 10.0));
 
-    constraint
-        h1(finalTime)=h1_final;
-        h2(finalTime)=h2_final;
-        h3(finalTime)=h3_final;
-        h1 <= h_max;
-        h1 >= 0;
-        h2 <= h_max;
-        h2 >= 0;
-        h3 <= h_max;
-        h3 >= 0;
-        u>=0;
-        u<=u_max;
-end 3_tanks_time_optimal;
+        parameter Real h1_final = 10.0;
+        parameter Real h2_final = 10.0;
+        parameter Real h3_final = 20.0;
+        parameter Real u_max = 10.0;
+
+        constraint
+            h1(finalTime)=h1_final;
+            h2(finalTime)=h2_final;
+            h3(finalTime)=h3_final;
+            h1 <= h_max;
+            h1 >= 0;
+            h2 <= h_max;
+            h2 >= 0;
+            h3 <= h_max;
+            h3 >= 0.00001;
+            u>=0;
+            u<=u_max;
+    end three_tanks_time_optimal;
+end TanksPkg;
