@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    # Compiling a JMU- object for optimization based on the double integrator
     project_base = os.path.abspath(__file__)
     project_base = project_base[:project_base.rfind('/')]
     project_base = project_base[:project_base.rfind('/')]
@@ -16,7 +15,6 @@ def main():
     os.environ["MODELICAPATH"] += ":%s/optimica_model" % project_base
     model_file = "opt_3_tanks.mop"
     model_path = os.path.join(project_base, 'optimica_model', model_file)
-    model_class_name = "TanksPkg.ThreeTanks"
     optimisation_model = "TanksPkg.three_tanks_time_optimal"
 
     # 1. Solve the initialization problem
@@ -45,26 +43,80 @@ def main():
     # Print some data for stationary point B
     print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
-    # ### 3. Solve the optimal control problem
-    # # Compile and load optimization problem
-    # op = transfer_optimization_problem(optimisation_model, model_path)
+    # ## 2. Compute initial guess trajectories by means of simulation
+    # Compile the optimization initialization model
+    init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
+    # Load the model
+    init_sim_model = load_fmu(init_sim_fmu)
+    # Set initial and reference values
+    # init_sim_model.set('cstr.c_init', c_0_A)
+    # init_sim_model.set('cstr.T_init', T_0_A)
+    init_sim_model.set('u', 10)
+
+    # Simulate with constant input Tc
+    init_res = init_sim_model.simulate(start_time=0.0, final_time=20.0)
+
+    # Extract variable profiles
+    t_init_sim = init_res['time']
+    h1_init_sim = init_res['h1']
+    h2_init_sim = init_res['h2']
+    h3_init_sim = init_res['h3']
+    u_init_sim = init_res['u']
+
+    # Plot the initial guess trajectories
+    plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim, u_init_sim)
+
+    ### 3. Solve the optimal control problem
+    # Compile and load optimization problem
+    op = transfer_optimization_problem("TanksPkg.three_tanks_time_optimal", model_path)
+
+    # # Set reference values
+    # op.set('Tc_ref', Tc_0_B)
+    # op.set('c_ref', float(c_0_B))
+    # op.set('T_ref', float(T_0_B))
     #
     # # Set initial values
-    # op.set('h10', float(10))
-    # op.set('h20', float(8))
-    # op.set('h30', float(10))
-    #
-    # # Set options
-    # opt_opts = op.optimize_options()
-    # # opt_opts['n_e'] = 19  # Number of elements
-    # # opt_opts['init_traj'] = init_res
-    # # opt_opts['nominal_traj'] = init_res
-    # opt_opts['IPOPT_options']['tol'] = 1e-6
-    # opt_opts['verbosity'] = 1
-    #
-    # # Solve the optimal control problem
-    # res = op.optimize(options=opt_opts)
-    #
+    # op.set('cstr.c_init', float(c_0_A))
+    # op.set('cstr.T_init', float(T_0_A))
+
+    # Set options
+    opt_opts = op.optimize_options()
+    print "OPTIMISATION OPTIONS:"
+    print opt_opts
+    # opt_opts['n_e'] = 19  # Number of elements
+    opt_opts['init_traj'] = init_res
+    # opt_opts['nominal_traj'] = init_res
+    opt_opts['IPOPT_options']['tol'] = 1e-10
+    opt_opts['verbosity'] = 1
+
+    # Solve the optimal control problem
+    res = op.optimize(options=opt_opts)
+
+    # Extract variable profiles
+    h1_res = res['h1']
+    h2_res = res['h2']
+    h3_res = res['h3']
+    u_res = res['u']
+    time_res = res['time']
+
+    # Plot the results
+    plt.close(2)
+    plt.figure(2)
+    plt.subplot(2, 1, 1)
+    plt.plot(time_res, h1_res)
+    plt.plot(time_res, c_ref, '--')
+    plt.grid()
+    plt.ylabel('Concentration')
+    plt.title('Optimized trajectories')
+
+    plt.subplot(3, 1, 3)
+    plt.plot(time_res, h3_res)
+    plt.plot(time_res, Tc_ref, '--')
+    plt.grid()
+    plt.ylabel('Cooling temperature')
+    plt.xlabel('time')
+    plt.show()
+
     # # Plotting the results
     # h1 = res['h1']
     # h2 = res['h2']
@@ -80,6 +132,25 @@ def main():
     # plt.legend(('h1', 'h2', 'h3', 'u'))
     # plt.title('Simple example')
     # plt.show()
+
+
+def plot_results(h1, h2, h3, time, u):
+    plt.close(1)
+    plt.figure(1)
+    # plt.hold(True)
+    plt.subplot(2, 1, 1)
+    plt.plot(time, h1, 'r', time, h2, 'g',
+             time, h3, 'b')
+    plt.grid()
+    plt.legend(('h1', 'h2', 'h3'))
+    plt.ylabel('Levels in tanks')
+    plt.title('Initial guess obtained by simulation')
+    plt.subplot(2, 1, 2)
+    plt.plot(time, u)
+    plt.grid()
+    plt.ylabel('Control')
+    plt.xlabel('Time')
+    plt.show()
 
 
 def print_stationary_point(identifier, h1_0, h2_0, h3_0, u_0):
