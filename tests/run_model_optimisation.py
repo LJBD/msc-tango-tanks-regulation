@@ -64,9 +64,10 @@ def main():
     u_init_sim = init_res['u']
 
     # Plot the initial guess trajectories
-    plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim, u_init_sim)
+    plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim, u_init_sim,
+                 title='Initial guess obtained by simulation')
 
-    ### 3. Solve the optimal control problem
+    # 3. Solve the optimal control problem
     # Compile and load optimization problem
     op = transfer_optimization_problem("TanksPkg.three_tanks_time_optimal", model_path)
 
@@ -100,41 +101,11 @@ def main():
     time_res = res['time']
 
     # Plot the results
-    plt.close(2)
-    plt.figure(2)
-    plt.subplot(2, 1, 1)
-    plt.plot(time_res, h1_res)
-    plt.plot(time_res, c_ref, '--')
-    plt.grid()
-    plt.ylabel('Concentration')
-    plt.title('Optimized trajectories')
-
-    plt.subplot(3, 1, 3)
-    plt.plot(time_res, h3_res)
-    plt.plot(time_res, Tc_ref, '--')
-    plt.grid()
-    plt.ylabel('Cooling temperature')
-    plt.xlabel('time')
-    plt.show()
-
-    # # Plotting the results
-    # h1 = res['h1']
-    # h2 = res['h2']
-    # h3 = res['h3']
-    # # u is the optimal trajectory
-    # u = res['u']
-    # time = res['time']
-    # print time
-    # plt.plot(time, h1, '-r', time, h2, '-g', time, h3, '-b', time, u, '-k')
-    # plt.grid(True)
-    # # Increasing the plot window to show results
-    # # plt.ylim([-1.5, 2])
-    # plt.legend(('h1', 'h2', 'h3', 'u'))
-    # plt.title('Simple example')
-    # plt.show()
+    plot_results(h1_res, h2_res, h3_res, time_res, u_res,
+                 title="Optimised trajectories")
 
 
-def plot_results(h1, h2, h3, time, u):
+def plot_results(h1, h2, h3, time, u, title):
     plt.close(1)
     plt.figure(1)
     # plt.hold(True)
@@ -144,7 +115,7 @@ def plot_results(h1, h2, h3, time, u):
     plt.grid()
     plt.legend(('h1', 'h2', 'h3'))
     plt.ylabel('Levels in tanks')
-    plt.title('Initial guess obtained by simulation')
+    plt.title(title)
     plt.subplot(2, 1, 2)
     plt.plot(time, u)
     plt.grid()
