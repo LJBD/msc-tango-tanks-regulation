@@ -54,7 +54,7 @@ def main():
     init_sim_model.set('u', 10)
 
     # Simulate with constant input Tc
-    init_res = init_sim_model.simulate(start_time=0.0, final_time=20.0)
+    init_res = init_sim_model.simulate(start_time=0.0, final_time=50.0)
 
     # Extract variable profiles
     t_init_sim = init_res['time']
@@ -79,13 +79,16 @@ def main():
     # # Set initial values
     # op.set('cstr.c_init', float(c_0_A))
     # op.set('cstr.T_init', float(T_0_A))
+    op.set('h1_final', float(15))
+    op.set('h2_final', float(12))
+    op.set('u_max', float(50))
 
     # Set options
     opt_opts = op.optimize_options()
     print "OPTIMISATION OPTIONS:"
     print opt_opts
     # opt_opts['n_e'] = 19  # Number of elements
-    opt_opts['init_traj'] = init_res
+    # opt_opts['init_traj'] = init_res
     # opt_opts['nominal_traj'] = init_res
     opt_opts['IPOPT_options']['tol'] = 1e-10
     opt_opts['verbosity'] = 1

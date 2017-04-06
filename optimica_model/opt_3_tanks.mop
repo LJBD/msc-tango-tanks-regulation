@@ -8,9 +8,9 @@ package TanksPkg
         parameter Modelica.SIunits.Length w = 5.0 "Tanks' depth";
         parameter Modelica.SIunits.Length h_max = 40.0 "Maximum height of liquid in tanks";
 
-        parameter Modelica.SIunits.VolumeFlowRate C1 = 10.0 "1st tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C2 = 7.0 "2nd tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C3 = 10.0 "3rd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C1 = 5.0 "1st tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C2 = 5.0 "2nd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C3 = 5.0 "3rd tank's outflow rate";
 
         parameter Modelica.SIunits.Length h10 = 10.0 "1st tank's initial value";
         parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
@@ -36,12 +36,12 @@ package TanksPkg
     end ThreeTanksInit;
 
     optimization three_tanks_time_optimal(objective=finalTime, startTime=0,
-                                          finalTime(free=true,initialGuess=20))
-        extends ThreeTanks(u(free=true, initialGuess = 10.0));
+                                          finalTime(free=true,initialGuess=50))
+        extends ThreeTanks(u(free=true, initialGuess = 50.0));
 
-        parameter Real h1_final = 10.0;
-        parameter Real h2_final = 10.0;
-        parameter Real h3_final = 12.0;
+        parameter Real h1_final = 1.0;
+        parameter Real h2_final = 1.0;
+        parameter Real h3_final = 1.0;
         parameter Real u_max = 20.0;
 
         constraint
