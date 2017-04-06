@@ -29,7 +29,7 @@ def main():
     op = transfer_optimization_problem(optimisation_model, model_path)
 
     # Set initial values
-    op.set('h10', float(15))
+    op.set('h10', float(1))
     op.set('h20', float(14))
 
     # Set options
@@ -50,11 +50,12 @@ def main():
     # u is the optimal trajectory
     u = res['u']
     time = res['time']
-    plt.plot(time, h1, ':k', time, h2, '--k', time, u, '-k')
+    print time
+    plt.plot(time, h1, '-r', time, h2, '-g', time, h3, '-b', time, u, '-k')
     plt.grid(True)
     # Increasing the plot window to show results
-    plt.ylim([-1.5, 2])
-    plt.legend(('h1', 'h2', 'u'))
+    # plt.ylim([-1.5, 2])
+    plt.legend(('h1', 'h2', 'h3', 'u'))
     plt.title('Simple example')
     plt.show()
 
