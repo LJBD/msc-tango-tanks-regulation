@@ -16,9 +16,9 @@ package TanksPkg
         parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
         parameter Modelica.SIunits.Length h30 = 10.0 "3rd tank's initial value";
 
-        Real h1(start=h10);
-        Real h2(start=h20);
-        Real h3(start=h30);
+        Real h1(start=h10, fixed=true);
+        Real h2(start=h20, fixed=true);
+        Real h3(start=h30, fixed=true);
 
         Modelica.Blocks.Interfaces.RealInput u;
     equation
