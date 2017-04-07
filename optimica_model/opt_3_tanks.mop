@@ -1,16 +1,16 @@
 within ;
 package TanksPkg
     model ThreeTanks
-        parameter Modelica.SIunits.Length a = 31.0 "1st tank's width";
-        parameter Modelica.SIunits.Length b = 40.0 "2nd tank's triangular part's width";
-        parameter Modelica.SIunits.Length c = 10.0 "2nd tank's rectangular part's width";
-        parameter Modelica.SIunits.Length R = 40.0 "3rd tank's side's radius";
-        parameter Modelica.SIunits.Length w = 5.0 "Tanks' depth";
-        parameter Modelica.SIunits.Length h_max = 40.0 "Maximum height of liquid in tanks";
+        parameter Modelica.SIunits.Length a = 31.0 "1st tank's width" annotation(Evaluate=true);
+        parameter Modelica.SIunits.Length b = 40.0 "2nd tank's triangular part's width" annotation(Evaluate=true);
+        parameter Modelica.SIunits.Length c = 10.0 "2nd tank's rectangular part's width" annotation(Evaluate=true);
+        parameter Modelica.SIunits.Length R = 40.0 "3rd tank's side's radius" annotation(Evaluate=true);
+        parameter Modelica.SIunits.Length w = 5.0 "Tanks' depth" annotation(Evaluate=true);
+        parameter Modelica.SIunits.Length h_max = 40.0 "Maximum height of liquid in tanks" annotation(Evaluate=true);
 
-        parameter Modelica.SIunits.VolumeFlowRate C1 = 5.0 "1st tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C2 = 5.0 "2nd tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C3 = 5.0 "3rd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C1 = 12.0 "1st tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C2 = 12.0 "2nd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C3 = 12.0 "3rd tank's outflow rate";
 
         parameter Modelica.SIunits.Length h10 = 10.0 "1st tank's initial value";
         parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
@@ -37,11 +37,11 @@ package TanksPkg
 
     optimization three_tanks_time_optimal(objective=finalTime, startTime=0,
                                           finalTime(free=true,initialGuess=50))
-        extends ThreeTanks(u(free=true, initialGuess = 50.0));
+        extends ThreeTanks(u(free=true, initialGuess=0.0));
 
-        parameter Real h1_final = 1.0;
-        parameter Real h2_final = 1.0;
-        parameter Real h3_final = 1.0;
+        parameter Real h1_final = 5.0;
+        parameter Real h2_final = 5.0;
+        parameter Real h3_final = 5.0;
         parameter Real u_max = 20.0;
 
         constraint
