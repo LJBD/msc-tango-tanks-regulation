@@ -42,7 +42,7 @@ def main():
     # # Print some data for stationary point B
     # print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
-    # ## 2. Compute initial guess trajectories by means of simulation
+    # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
     init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
     # Load the model
@@ -74,28 +74,23 @@ def main():
     # Compile and load optimization problem
     op = transfer_optimization_problem("TanksPkg.three_tanks_time_optimal", model_path)
 
-    # # Set reference values
-    # op.set('Tc_ref', Tc_0_B)
-    # op.set('c_ref', float(c_0_B))
-    # op.set('T_ref', float(T_0_B))
-    #
-    # # Set initial values
-    # op.set('cstr.c_init', float(c_0_A))
-    # op.set('cstr.T_init', float(T_0_A))
+    # Set initial values
     op.set('h1_final', h1_sim_final)
     op.set('h2_final', h2_sim_final)
     op.set('h3_final', h3_sim_final)
-    # op.set('u_max', float(50))
+    # op.set('u_max', 50)
 
     # Set options
     opt_opts = op.optimize_options()
-    print "OPTIMISATION OPTIONS:"
-    print opt_opts
-    # opt_opts['n_e'] = 19  # Number of elements
+    # opt_opts['n_e'] = 80  # Number of elements
+    opt_opts['variable_scaling'] = False
     opt_opts['init_traj'] = init_res
     # opt_opts['nominal_traj'] = init_res
-    opt_opts['IPOPT_options']['tol'] = 1e-4
+    opt_opts['IPOPT_options']['tol'] = 1e-5
     opt_opts['verbosity'] = 1
+    print "OPTIMISATION OPTIONS:"
+    for option, value in opt_opts.items():
+        print '\t', option, ':', value
 
     # Solve the optimal control problem
     res = op.optimize(options=opt_opts)
@@ -110,8 +105,6 @@ def main():
     # Plot the results
     plot_results(h1_res, h2_res, h3_res, time_res, u_res,
                  title="Optimised trajectories")
-
-    print u_res
 
 
 def plot_results(h1, h2, h3, time, u, title):
