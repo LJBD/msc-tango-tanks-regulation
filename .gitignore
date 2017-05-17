@@ -3,4 +3,6 @@
 .idea/
 *.jmu
 *.fmu
+*log.txt
+*result.txt
 
