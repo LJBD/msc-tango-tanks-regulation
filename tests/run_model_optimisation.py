@@ -7,6 +7,9 @@ from pyjmi import JMUModel, transfer_optimization_problem
 import matplotlib.pyplot as plt
 
 
+U_MAX = 30.0
+
+
 def main():
     project_base = os.path.abspath(__file__)
     project_base = project_base[:project_base.rfind('/')]
@@ -16,31 +19,31 @@ def main():
     model_file = "opt_3_tanks.mop"
     model_path = os.path.join(project_base, 'optimica_model', model_file)
 
-    # # 1. Solve the initialization problem
-    # # Compile the stationary initialization model into an FMU
-    # init_fmu = compile_fmu("TanksPkg.ThreeTanksInit", model_path)
-    # init_model = load_fmu(init_fmu)
-    #
-    # # Set input for Stationary point A
-    # u_0_A = 0
-    # init_model.set('u', u_0_A)
-    # # Solve the initialization problem using FMI
-    # init_model.initialize()
-    # # Store stationary point A
-    # [h1_0_A, h2_0_A, h3_0_A] = init_model.get(['h1', 'h2', 'h3'])
-    # # Print some data for stationary point A
-    # print_stationary_point('A', h1_0_A, h2_0_A, h3_0_A, u_0_A)
-    #
-    # # Set inputs for Stationary point B
-    # init_model.reset()  # reset the FMU so that we can initialize it again
-    # u_0_B = 20
-    # init_model.set('u', u_0_B)
-    # # Solve the initialization problem using FMI
-    # init_model.initialize()
-    # # Store stationary point B
-    # [h1_0_B, h2_0_B, h3_0_B] = init_model.get(['h1', 'h2', 'h3'])
-    # # Print some data for stationary point B
-    # print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
+    # 1. Solve the initialization problem
+    # Compile the stationary initialization model into an FMU
+    init_fmu = compile_fmu("TanksPkg.ThreeTanksInit", model_path)
+    init_model = load_fmu(init_fmu)
+
+    # Set input for Stationary point A
+    u_0_A = 0
+    init_model.set('u', u_0_A)
+    # Solve the initialization problem using FMI
+    init_model.initialize()
+    # Store stationary point A
+    [h1_0_A, h2_0_A, h3_0_A] = init_model.get(['h1', 'h2', 'h3'])
+    # Print some data for stationary point A
+    print_stationary_point('A', h1_0_A, h2_0_A, h3_0_A, u_0_A)
+
+    # Set inputs for Stationary point B
+    init_model.reset()  # reset the FMU so that we can initialize it again
+    u_0_B = U_MAX
+    init_model.set('u', u_0_B)
+    # Solve the initialization problem using FMI
+    init_model.initialize()
+    # Store stationary point B
+    [h1_0_B, h2_0_B, h3_0_B] = init_model.get(['h1', 'h2', 'h3'])
+    # Print some data for stationary point B
+    print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
     # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
@@ -48,7 +51,7 @@ def main():
     # Load the model
     init_sim_model = load_fmu(init_sim_fmu)
     # Set initial and reference values
-    init_sim_model.set('u', 20)
+    init_sim_model.set('u', U_MAX)
 
     # Simulate with constant input Tc
     init_res = init_sim_model.simulate(start_time=0.0, final_time=50.0)
@@ -75,10 +78,13 @@ def main():
     op = transfer_optimization_problem("TanksPkg.three_tanks_time_optimal", model_path)
 
     # Set initial values
-    op.set('h1_final', h1_sim_final)
-    op.set('h2_final', h2_sim_final)
-    op.set('h3_final', h3_sim_final)
-    # op.set('u_max', 50)
+    # op.set('h1_final', h1_sim_final)
+    # op.set('h2_final', h2_sim_final)
+    # op.set('h3_final', h3_sim_final)
+    op.set('h1_final', float(h1_0_B))
+    op.set('h2_final', float(h2_0_B))
+    op.set('h3_final', float(h3_0_B))
+    op.set('u_max', U_MAX)
 
     # Set options
     opt_opts = op.optimize_options()
