@@ -39,23 +39,19 @@ package TanksPkg
 
     model ThreeTanksCostateEquations
         extends ThreeTanks;
-        Real psi1;
-        Real psi2;
-        Real psi3;
+
+        parameter Real theta = 0.0;
+        parameter Real phi = 0.0;
+
+        Real psi1(start=sin(theta) * cos(phi), fixed=true);
+        Real psi2(start=sin(theta) * sin(phi), fixed=true);
+        Real psi3(start=cos(theta), fixed=true);
     equation
         // u = u_max * (sign(psi1) + abs(sign(psi1)))/2;
         der(psi1) = C1*psi1/(2*a*w*sqrt(h1)) - C1*psi2/(2*sqrt(h1)*(c*w + h2*b*w/h_max));
         der(psi2) = -psi2*((b*(C1*sqrt(h1) - C2*sqrt(h2)))/(c*h_max + h2*b) - C2/(2*sqrt(h2)))/(c*w + h2*b*w/h_max) - psi3/(w*sqrt(h3*(2*R - h3)));
         der(psi3) = -psi3*C3*(3*R - 2*h3) / (w*h3*sqrt(2*R - h3) * (2*R - h3));
     end ThreeTanksCostateEquations;
-
-    model ThreeTanksCostateEquationsInitialisation
-        extends ThreeTanksCostateEquations(psi1(start=sin(theta) * cos(phi), fixed=true),
-                                           psi2(start=sin(theta) * sin(phi), fixed=true),
-                                           psi3(start=cos(theta), fixed=true));
-        parameter Real theta = 0.0;
-        parameter Real phi = 0.0;
-    end ThreeTanksCostateEquationsInitialisation;
 
     optimization three_tanks_time_optimal(objective=finalTime, startTime=0,
                                           finalTime(free=true,initialGuess=50))
