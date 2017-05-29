@@ -35,6 +35,14 @@ package TanksPkg
             der(h3) = 0;
     end ThreeTanksInit;
 
+    model ThreeTanksConjugation
+        extends ThreeTanks;
+        equation
+            der(psi1) = C1*psi1/(2*a*w*sqrt(h1)) - C1*psi2/(2*sqrt(h1)*(c*w + h2*b*w/h_max));
+            der(psi2) = -psi2*((b*(C1*sqrt(h1) - C2*sqrt(h2)))/(c*h_max + h2*b) - C2/(2*sqrt(h2)))/(c*w + h2*b*w/h_max) - psi3/(w*sqrt(h3*(2*R - h3)));
+            der(psi3) = -psi3*C3*(3*R - 2*h3) / (w*h3*sqrt(2*R - h3) * (2*R - h3));
+    end ThreeTanksConjugation;
+
     optimization three_tanks_time_optimal(objective=finalTime, startTime=0,
                                           finalTime(free=true,initialGuess=50))
         extends ThreeTanks(u(free=true, initialGuess=20.0));
