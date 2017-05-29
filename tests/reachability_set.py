@@ -7,7 +7,7 @@ from pymodelica import compile_fmu
 from tests.run_model_optimisation import get_model_path, simulate
 
 
-class ReachabilitySetsCalculator():
+class ReachabilitySetsCalculator:
     def __init__(self):
         self.model_path = get_model_path()
 
@@ -16,7 +16,7 @@ class ReachabilitySetsCalculator():
         init_model = load_fmu(init_fmu)
         init_model.set('phi', phi)
         init_model.set('theta', theta)
-        init_model.initialise()
+        init_model.initialize()
         return init_model.get(['psi1', 'psi2', 'psi3'])
 
     def get_reachability_set(self, precision=.01):
