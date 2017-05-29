@@ -8,9 +8,9 @@ package TanksPkg
         parameter Modelica.SIunits.Length w = 5.0 "Tanks' depth" annotation(Evaluate=true);
         parameter Modelica.SIunits.Length h_max = 40.0 "Maximum height of liquid in tanks" annotation(Evaluate=true);
 
-        parameter Modelica.SIunits.VolumeFlowRate C1 = 6.0 "1st tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C2 = 6.0 "2nd tank's outflow rate";
-        parameter Modelica.SIunits.VolumeFlowRate C3 = 8.0 "3rd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C1 = 26.0 "1st tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C2 = 26.0 "2nd tank's outflow rate";
+        parameter Modelica.SIunits.VolumeFlowRate C3 = 28.0 "3rd tank's outflow rate";
 
         parameter Modelica.SIunits.Length h10 = 10.0 "1st tank's initial value";
         parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
