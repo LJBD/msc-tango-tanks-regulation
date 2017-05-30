@@ -5,6 +5,7 @@ from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from pyfmi.fmi import load_fmu
 
+from ds_tanks.tanks_utils import get_model_path, get_initialisation_values
 from pymodelica import compile_fmu
 
 
@@ -67,7 +68,8 @@ class TanksOptimalControl(Device):
         super(TanksOptimalControl, self).init_device()
         self.set_state(DevState.OFF)
         self.set_status("Model not loaded.")
-        self.set_model_path()
+        self.model_path = get_model_path(model_file=self.ModelFile)
+        self.info_stream("Project path: %s" % self.model_path)
 
     @command
     @DebugIt
@@ -101,6 +103,17 @@ class TanksOptimalControl(Device):
             msg = "Initial model not loaded!"
             self.warn_stream(msg)
             raise TypeError(msg)
+
+    @command(dtype_in=float, doc_in="1st tank final level")
+    @DebugIt
+    def FindEquilibriumFromH1(self, h1_final_wanted):
+        pass
+
+    @command(dtype_in=float, doc_in="Control value for model initalisation")
+    @DebugIt
+    def GetEquilibriumFromControl(self, control_value):
+        [self.h1_final, self.h2_final, self.h3_final] =\
+            get_initialisation_values(self.model_path, control_value)
 
     # -----------------
     # Attribute methods
@@ -138,11 +151,3 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
-    def set_model_path(self):
-        project_base = os.path.abspath(__file__)
-        project_base = project_base[:project_base.rfind('/')]
-        project_base = project_base[:project_base.rfind('/')]
-        print "Project base path:", project_base
-        os.environ["MODELICAPATH"] += ":%s/optimica_model" % project_base
-        self.model_path = os.path.join(project_base, 'optimica_model',
-                                       self.ModelFile)

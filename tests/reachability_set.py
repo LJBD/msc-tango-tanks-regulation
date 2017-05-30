@@ -4,7 +4,7 @@ from numpy.ma import arange
 from pyfmi.fmi import load_fmu, FMUException
 
 from pymodelica import compile_fmu
-from tests.run_model_optimisation import get_model_path, simulate, U_MAX
+from tests.run_model_optimisation import get_model_path, simulate_tanks, U_MAX
 
 
 class ReachabilitySetsCalculator:
