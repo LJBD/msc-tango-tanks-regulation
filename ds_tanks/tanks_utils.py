@@ -45,10 +45,6 @@ def get_initialisation_values(model_path, control_value):
     return init_model.get(['h1', 'h2', 'h3'])
 
 
-def get_equilibrium(h10, c1=26.0):
-    return c1*sqrt(h10)
-
-
 def get_model_path(model_file="opt_3_tanks.mop"):
     project_base = os.path.abspath(__file__)
     project_base = project_base[:project_base.rfind('/')]
