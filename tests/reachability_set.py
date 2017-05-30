@@ -32,7 +32,8 @@ class ReachabilitySetsCalculator:
                 init_model.set('phi', phi)
                 init_model.set('theta', theta)
                 init_res = self.single_simulation(init_model)
-                print init_model.get_log()
+                # print init_model.get_log()
+                print init_res
 
     def single_simulation(self, init_sim_model=None, t_start=0.0, t_final=50.0):
         if not init_sim_model:
