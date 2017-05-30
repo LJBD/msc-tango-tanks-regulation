@@ -1,11 +1,10 @@
-import os
-
 from PyTango import DevState, DebugIt, AttrWriteType
 from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from pyfmi.fmi import load_fmu
 
 from ds_tanks.tanks_utils import get_model_path, get_initialisation_values
+from pyjmi import transfer_optimization_problem
 from pymodelica import compile_fmu
 
 
@@ -25,6 +24,7 @@ class TanksOptimalControl(Device):
     h2_final = 0.0
     h3_final = 0.0
     init_model = None
+    op = None
 
     # ----------
     # Properties
@@ -33,6 +33,8 @@ class TanksOptimalControl(Device):
                                      doc="Tolerance of IPOPT solver.")
     ModelFile = device_property(dtype=str, default_value="opt_3_tanks.mop",
                                 doc="Name of a file containing model.")
+    MaxControl = device_property(dtype=int, default_value=100,
+                                 doc="Maximum value of control")
 
     # ----------
     # Attributes
@@ -113,6 +115,20 @@ class TanksOptimalControl(Device):
         [self.h1_final, self.h2_final, self.h3_final] =\
             get_initialisation_values(self.model_path, control_value)
 
+    @command(dtype_out=str, doc_out="Optimisation options in string format")
+    @DebugIt()
+    def GetOptimisationOptions(self):
+        if not self.op:
+            msg = "Optimisation problem not yet initalised!"
+            self.warn_stream(msg)
+            raise TypeError(msg)
+        else:
+            opt_opts = self.op.optimize_options()
+            str_opts = "OPTIMISATION OPTIONS:\n"
+            for option, value in opt_opts.items():
+                str_opts += '%s: %s\n' % (option, value)
+            return str_opts
+
     # -----------------
     # Attribute methods
     # -----------------
@@ -149,6 +165,37 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
+    def prepare_optimisation(self, init_res):
+        # 3. Solve the optimal control problem
+        # Compile and load optimization problem
+        optimisation_model = "TanksPkg.three_tanks_time_optimal"
+        self.op = transfer_optimization_problem(optimisation_model,
+                                                self.model_path)
+        # Set initial values
+        self.op.set('h1_final', float(self.h1_final))
+        self.op.set('h2_final', float(self.h2_final))
+        self.op.set('h3_final', float(self.h3_final))
+        self.op.set('u_max', self.MaxControl)
+
+        # Set options
+        opt_opts = self.op.optimize_options()
+        # opt_opts['n_e'] = 80  # Number of elements
+        opt_opts['variable_scaling'] = False
+        opt_opts['init_traj'] = init_res
+        opt_opts['IPOPT_options']['tol'] = self.IPOPTTolerance
+        opt_opts['verbosity'] = 1
+
+    def run_optimisation(self, opt_options):
+        # Solve the optimal control problem
+        res = self.op.optimize(options=opt_options)
+
+        # Extract variable profiles
+        h1_res = res['h1']
+        h2_res = res['h2']
+        h3_res = res['h3']
+        u_res = res['u']
+        time_res = res['time']
+
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
 run = TanksOptimalControl.run_server
