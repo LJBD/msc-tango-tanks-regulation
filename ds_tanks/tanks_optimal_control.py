@@ -182,6 +182,7 @@ class TanksOptimalControl(Device):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
         opt_options = self.prepare_optimisation(self.init_result)
+        # TODO: run optimisation should be done in another process/thread
         opt_success = self.run_optimisation(opt_options)
         if opt_success:
             self.set_state(DevState.ON)
@@ -189,6 +190,11 @@ class TanksOptimalControl(Device):
         else:
             self.set_state(DevState.ALARM)
             self.set_status("Optimal solution not found")
+
+    # TODO: add a command for verifying optimisation results (it should
+    # "normalise" control to either 0 or u_max)
+
+    # TODO: add communication with an external process via TCP
 
     # -----------------
     # Attribute methods
