@@ -1,6 +1,6 @@
 within ;
 package TanksPkg
-    model ThreeTanks
+     partial model ThreeTanksNoInput
         parameter Modelica.SIunits.Length a = 31.0 "1st tank's width" annotation(Evaluate=true);
         parameter Modelica.SIunits.Length b = 40.0 "2nd tank's triangular part's width" annotation(Evaluate=true);
         parameter Modelica.SIunits.Length c = 10.0 "2nd tank's rectangular part's width" annotation(Evaluate=true);
@@ -22,11 +22,15 @@ package TanksPkg
         Real h2(start=h20, fixed=true, min=0, max=h_max);
         Real h3(start=h30, fixed=true, min=0, max=h_max);
 
-        Modelica.Blocks.Interfaces.RealInput u;
+        replaceable Real u;
     equation
         der(h1)=(u - C1*sqrt(h1))/a*w;
         der(h2)=(C1*sqrt(h1) - C2*sqrt(h2))/(c*w + h2*b*w/h_max);
         der(h3)=(C2*sqrt(h2) - C3*sqrt(h3))/(w*sqrt(R^2 - (R - h3)^2));
+    end ThreeTanksNoInput;
+
+    model ThreeTanks
+        extends ThreeTanksNoInput(redeclare Modelica.Blocks.Interfaces.RealInput u);
     end ThreeTanks;
 
     model ThreeTanksInit
@@ -38,7 +42,7 @@ package TanksPkg
     end ThreeTanksInit;
 
     model ThreeTanksCostateEquations
-        extends ThreeTanks;
+        extends ThreeTanksNoInput(u(fixed=true, stateSelect=StateSelect.never));
 
         parameter Real theta = 0.0;
         parameter Real phi = 0.0;
@@ -47,7 +51,7 @@ package TanksPkg
         Real psi2(start=sin(theta) * sin(phi), fixed=true);
         Real psi3(start=cos(theta), fixed=true);
     equation
-        // u = u_max * (sign(psi1) + abs(sign(psi1)))/2;
+         u = u_max * (sign(psi1) + abs(sign(psi1)))/2;
         der(psi1) = C1*psi1/(2*a*w*sqrt(h1)) - C1*psi2/(2*sqrt(h1)*(c*w + h2*b*w/h_max));
         der(psi2) = -psi2*((b*(C1*sqrt(h1) - C2*sqrt(h2)))/(c*h_max + h2*b) - C2/(2*sqrt(h2)))/(c*w + h2*b*w/h_max) - psi3/(w*sqrt(h3*(2*R - h3)));
         der(psi3) = -psi3*C3*(3*R - 2*h3) / (w*h3*sqrt(2*R - h3) * (2*R - h3));

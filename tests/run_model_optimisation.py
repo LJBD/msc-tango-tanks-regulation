@@ -30,7 +30,7 @@ def main():
 
     # Set inputs for Stationary point B
     init_model.reset()  # reset the FMU so that we can initialize it again
-    u_0_B = U_MAX
+    u_0_B = U_MAX / 2
     init_model.set('u', u_0_B)
     # Solve the initialization problem using FMI
     init_model.initialize()
@@ -39,7 +39,7 @@ def main():
     # Print some data for stationary point B
     print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
-    h1_init_sim, h2_init_sim, h3_init_sim, init_res = simulate(model_path)
+    h1_init_sim, h2_init_sim, h3_init_sim, init_res = simulate(model_path, u=u_0_B)
 
     h1_sim_final = h1_init_sim[-1]
     h2_sim_final = h2_init_sim[-1]
@@ -66,7 +66,7 @@ def main():
     opt_opts['variable_scaling'] = False
     opt_opts['init_traj'] = init_res
     # opt_opts['nominal_traj'] = init_res
-    opt_opts['IPOPT_options']['tol'] = 1e-5
+    opt_opts['IPOPT_options']['tol'] = 1e-3
     opt_opts['verbosity'] = 1
     print "OPTIMISATION OPTIONS:"
     for option, value in opt_opts.items():
