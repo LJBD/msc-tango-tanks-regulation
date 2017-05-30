@@ -3,7 +3,8 @@ from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from pyfmi.fmi import load_fmu
 
-from ds_tanks.tanks_utils import get_model_path, get_initialisation_values
+from ds_tanks.tanks_utils import get_model_path, get_initialisation_values, \
+    simulate_tanks, get_equilibrium
 from pyjmi import transfer_optimization_problem
 from pymodelica import compile_fmu
 
@@ -128,6 +129,13 @@ class TanksOptimalControl(Device):
             for option, value in opt_opts.items():
                 str_opts += '%s: %s\n' % (option, value)
             return str_opts
+
+    @command
+    @DebugIt()
+    def RunSimulation(self):
+        control_value = get_equilibrium(self.h1_final)
+        self.h1_sim, self.h2_sim, self.h3_sim, init_res =\
+            simulate_tanks(self.model_path, u=control_value)
 
     # -----------------
     # Attribute methods

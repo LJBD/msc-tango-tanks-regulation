@@ -1,4 +1,6 @@
 import os
+
+from math import sqrt
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
@@ -43,9 +45,8 @@ def get_initialisation_values(model_path, control_value):
     return init_model.get(['h1', 'h2', 'h3'])
 
 
-def get_equilibrium(C1=26.0, C2=26.0, C3=28.0, h10=10, h20=10, h30=10, u=U_MAX,
-                    retval="u"):
-    pass
+def get_equilibrium(h10, c1=26.0):
+    return c1*sqrt(h10)
 
 
 def get_model_path(model_file="opt_3_tanks.mop"):
