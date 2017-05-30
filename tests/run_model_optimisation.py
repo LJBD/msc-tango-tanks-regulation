@@ -1,13 +1,9 @@
-import os
-
 from pyfmi.fmi import load_fmu
 
-from pymodelica import compile_jmu, compile_fmu
-from pyjmi import JMUModel, transfer_optimization_problem
-import matplotlib.pyplot as plt
-
-
-U_MAX = 100.0
+from ds_tanks.tanks_utils import plot_results, U_MAX, simulate_tanks, \
+    print_stationary_point, get_model_path
+from pymodelica import compile_fmu
+from pyjmi import transfer_optimization_problem
 
 
 def main():
@@ -39,8 +35,8 @@ def main():
     # Print some data for stationary point B
     print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
-    h1_init_sim, h2_init_sim, h3_init_sim, init_res = simulate(model_path,
-                                                               u=u_0_B)
+    h1_init_sim, h2_init_sim, h3_init_sim, init_res = simulate_tanks(model_path,
+                                                                     u=u_0_B)
 
     h1_sim_final = h1_init_sim[-1]
     h2_sim_final = h2_init_sim[-1]
@@ -88,66 +84,6 @@ def main():
     # Plot the results
     plot_results(h1_res, h2_res, h3_res, time_res, u_res,
                  title="Optimised trajectories")
-
-
-def simulate(model_path, u=U_MAX, t_start=0.0, t_final=50.0):
-    # 2. Compute initial guess trajectories by means of simulation
-    # Compile the optimization initialization model
-    init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
-    # Load the model
-    init_sim_model = load_fmu(init_sim_fmu)
-    # Set initial and reference values
-    init_sim_model.set('u', u)
-    # Simulate with constant input Tc
-    init_res = init_sim_model.simulate(start_time=t_start, final_time=t_final)
-    # Extract variable profiles
-    t_init_sim = init_res['time']
-    h1_init_sim = init_res['h1']
-    h2_init_sim = init_res['h2']
-    h3_init_sim = init_res['h3']
-    u_init_sim = init_res['u']
-    # Plot the initial guess trajectories
-    plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim, u_init_sim,
-                 title='Initial guess obtained by simulation')
-    return h1_init_sim, h2_init_sim, h3_init_sim, init_res
-
-
-def get_model_path():
-    project_base = os.path.abspath(__file__)
-    project_base = project_base[:project_base.rfind('/')]
-    project_base = project_base[:project_base.rfind('/')]
-    print "Project base path:", project_base
-    os.environ["MODELICAPATH"] += ":%s/optimica_model" % project_base
-    model_file = "opt_3_tanks.mop"
-    model_path = os.path.join(project_base, 'optimica_model', model_file)
-    return model_path
-
-
-def plot_results(h1, h2, h3, time, u, title):
-    plt.close(1)
-    plt.figure(1)
-    # plt.hold(True)
-    plt.subplot(2, 1, 1)
-    plt.plot(time, h1, 'r', time, h2, 'g',
-             time, h3, 'b')
-    plt.grid()
-    plt.legend(('h1', 'h2', 'h3'))
-    plt.ylabel('Levels in tanks')
-    plt.title(title)
-    plt.subplot(2, 1, 2)
-    plt.plot(time, u)
-    plt.grid()
-    plt.ylabel('Control')
-    plt.xlabel('Time')
-    plt.show()
-
-
-def print_stationary_point(identifier, h1_0, h2_0, h3_0, u_0):
-    print(' *** Stationary point %s ***' % identifier)
-    print('u = %f' % u_0)
-    print('h1 = %f' % h1_0)
-    print('h2 = %f' % h2_0)
-    print('h3 = %f' % h3_0)
 
 
 if __name__ == '__main__':

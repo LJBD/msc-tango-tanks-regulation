@@ -72,13 +72,12 @@ class TanksOptimalControl(Device):
         self.info_stream("Project path: %s" % self.model_path)
 
     @command
-    @DebugIt
+    @DebugIt()
     def LoadInitialModel(self):
         """
         Compile the stationary initialization model into an FMU.
         :return: None
         """
-        self.debug_stream("In LoadInitialModel")
         if not self.init_model:
             init_fmu = compile_fmu("TanksPkg.ThreeTanksInit", self.model_path)
             self.init_model = load_fmu(init_fmu)
@@ -90,13 +89,12 @@ class TanksOptimalControl(Device):
             raise TypeError(msg)
 
     @command
-    @DebugIt
+    @DebugIt()
     def ResetModel(self):
         """
         Reset the initial model.
         :return: None
         """
-        self.debug_stream("In ResetModel")
         if self.init_model:
             self.init_model.reset()
         else:
@@ -105,12 +103,12 @@ class TanksOptimalControl(Device):
             raise TypeError(msg)
 
     @command(dtype_in=float, doc_in="1st tank final level")
-    @DebugIt
+    @DebugIt()
     def FindEquilibriumFromH1(self, h1_final_wanted):
         pass
 
     @command(dtype_in=float, doc_in="Control value for model initalisation")
-    @DebugIt
+    @DebugIt()
     def GetEquilibriumFromControl(self, control_value):
         [self.h1_final, self.h2_final, self.h3_final] =\
             get_initialisation_values(self.model_path, control_value)
@@ -151,3 +149,9 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
+
+TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
+run = TanksOptimalControl.run_server
+
+if __name__ == '__main__':
+    run()
