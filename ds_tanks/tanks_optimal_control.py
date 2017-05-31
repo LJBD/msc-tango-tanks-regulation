@@ -32,6 +32,7 @@ class TanksOptimalControl(Device):
     optimal_h1 = [0.0]
     optimal_h2 = [0.0]
     optimal_h3 = [0.0]
+    switch_times = []
 
     # ----------
     # Properties
@@ -87,6 +88,10 @@ class TanksOptimalControl(Device):
     OptimalH3 = attribute(dtype=(float,), max_dim_x=10000,
                           fget="read_optimal_h3",
                           doc="Optimal trajectory of level in 3nd tank")
+    SwitchTimes = attribute(dtype=(float,), max_dim_x=20,
+                            fget="read_switch_times",
+                            doc="Times of switching between min and max"
+                                "control.")
 
     # --------
     # Commands
@@ -209,8 +214,7 @@ class TanksOptimalControl(Device):
                     self.optimal_control[i] = self.MaxControl
                 else:
                     self.optimal_control[i] = self.MaxControl
-            switch_times = self.get_switch_times()
-            print switch_times
+            self.get_switch_times()
 
     # TODO: add a command for verifying optimisation results
 
@@ -260,6 +264,9 @@ class TanksOptimalControl(Device):
 
     def read_optimal_h3(self):
         return self.optimal_h3
+
+    def read_switch_times(self):
+        return self.switch_times
 
     # -------------
     # Other methods
@@ -322,15 +329,13 @@ class TanksOptimalControl(Device):
         eq = control ** 2 / outflow ** 2
         return eq
 
-    @DebugIt(show_ret=True)
     def get_switch_times(self):
         switch_times = []
         for i in xrange(len(self.optimal_control) - 1):
             if abs(self.optimal_control[i+1] - self.optimal_control[i]) > 1:
                 switch_times.append(i)
         time_step = self.t_opt / len(self.optimal_control)
-        switch_times = [index * time_step for index in switch_times]
-        return switch_times
+        self.switch_times = [index * time_step for index in switch_times]
 
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
