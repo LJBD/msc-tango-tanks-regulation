@@ -82,11 +82,13 @@ def main():
     time_res = res['time']
     print "Final value of time:", time_res[-1]
     print dir(res)
-    print res.final("time")
+    print res.get_opt_input()
 
     # Plot the results
     plot_results(h1_res, h2_res, h3_res, time_res, u_res,
                  title="Optimised trajectories")
+    simulate_tanks(model_path, u=u_res, t_final=time_res[-1],
+                   with_plots=True)
 
 
 if __name__ == '__main__':

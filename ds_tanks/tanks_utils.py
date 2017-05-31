@@ -1,6 +1,8 @@
 import os
 
 from math import sqrt
+
+import numpy
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
@@ -10,15 +12,32 @@ U_MAX = 100.0
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
                    with_plots=False):
+    """
+    Simulate tanks model.
+    :param model_path: path to a file containing the model
+    :param u: either a constant value or a vector of input
+    :param t_start: starting time for the simulation
+    :param t_final: final time for the simulation
+    :param with_plots: should the plots be displayed
+    :return: None
+    """
     # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
     init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
     # Load the model
     init_sim_model = load_fmu(init_sim_fmu)
-    # Set initial and reference values
-    init_sim_model.set('u', u)
-    # Simulate with constant input Tc
-    init_res = init_sim_model.simulate(start_time=t_start, final_time=t_final)
+    if hasattr(u, "__len__"):
+        t = numpy.linspace(0.0, t_final, len(u))
+        u_traj = numpy.transpose(numpy.vstack((t, u)))
+        init_res = init_sim_model.simulate(start_time=t_start,
+                                           final_time=t_final,
+                                           input=('u', u_traj))
+    else:
+        # Set initial and reference values
+        init_sim_model.set('u', u)
+        # Simulate with constant input Tc
+        init_res = init_sim_model.simulate(start_time=t_start,
+                                           final_time=t_final)
     # Extract variable profiles
     t_init_sim = init_res['time']
     h1_init_sim = init_res['h1']

@@ -119,7 +119,7 @@ class TanksOptimalControl(Device):
         else:
             msg = "Initial model already loaded."
             self.warn_stream(msg)
-            raise TypeError(msg)
+            raise Exception(msg)
 
     @command
     @DebugIt()
@@ -134,7 +134,7 @@ class TanksOptimalControl(Device):
         else:
             msg = "Initial model not loaded!"
             self.warn_stream(msg)
-            raise TypeError(msg)
+            raise Exception(msg)
 
     @command(dtype_in=float, doc_in="Control value for model initalisation")
     @DebugIt()
@@ -156,7 +156,7 @@ class TanksOptimalControl(Device):
         if not self.op:
             msg = "Optimisation problem not yet initalised!"
             self.warn_stream(msg)
-            raise TypeError(msg)
+            raise Exception(msg)
         else:
             opt_opts = self.op.optimize_options()
             str_opts = "OPTIMISATION OPTIONS:\n"
@@ -164,19 +164,30 @@ class TanksOptimalControl(Device):
                 str_opts += '%s: %s\n' % (option, value)
             return str_opts
 
-    @command
+    @command(dtype_in=int, doc_in="0 for normal simulation and 1 for"
+                                  "simulation with optimal control")
     @DebugIt()
-    def RunSimulation(self):
-        checks = self.check_equilibrium(self.control_value or 0.0)
-        if False in checks:
-            control_h1 = self.Tank1Outflow * sqrt(self.h1_final)
-            control_h2 = self.Tank2Outflow * sqrt(self.h2_final)
-            control_h3 = self.Tank3Outflow * sqrt(self.h3_final)
-            self.control_value = (control_h1 + control_h2 + control_h3) / 3.0
-            self.warn_stream("At least one of levels is not from equilibrium,"
-                             "setting control to %f" % self.control_value)
-        self.h1_sim, self.h2_sim, self.h3_sim, self.init_result =\
-            simulate_tanks(self.model_path, u=self.control_value)
+    def RunSimulation(self, switch):
+        if switch == 0:
+            checks = self.check_equilibrium(self.control_value or 0.0)
+            if False in checks:
+                ctrl_h1 = self.Tank1Outflow * sqrt(self.h1_final)
+                ctrl_h2 = self.Tank2Outflow * sqrt(self.h2_final)
+                ctrl_h3 = self.Tank3Outflow * sqrt(self.h3_final)
+                self.control_value = (ctrl_h1 + ctrl_h2 + ctrl_h3) / 3.0
+                self.warn_stream("At least one of levels is not from"
+                                 "equilibrium, setting control to %f" %
+                                 self.control_value)
+            self.h1_sim, self.h2_sim, self.h3_sim, self.init_result =\
+                simulate_tanks(self.model_path, u=self.control_value)
+        elif self.t_opt == -1:
+            msg = "Optimisation not yet performed, can't simulate results!"
+            self.warn_stream(msg)
+            raise Exception(msg)
+        else:
+            self.h1_sim, self.h2_sim, self.h3_sim, self.init_result = \
+                simulate_tanks(self.model_path, u=self.optimal_control,
+                               t_final=self.t_opt)
 
     @command
     @DebugIt()
@@ -199,7 +210,7 @@ class TanksOptimalControl(Device):
         if self.t_opt == -1:
             msg = "Optimisation not yet performed!"
             self.warn_stream(msg)
-            raise TypeError(msg)
+            raise Exception(msg)
         else:
             for i, ctrl_value in enumerate(self.optimal_control):
                 if ctrl_value < 25:
