@@ -3,10 +3,10 @@ from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from math import sqrt
 from pyfmi.fmi import load_fmu
-
-from ds_tanks.tanks_utils import get_model_path, simulate_tanks
 from pyjmi import transfer_optimization_problem
 from pymodelica import compile_fmu
+
+from ds_tanks.tanks_utils import get_model_path, simulate_tanks
 
 
 class TanksOptimalControl(Device):
@@ -131,12 +131,6 @@ class TanksOptimalControl(Device):
             self.warn_stream(msg)
             raise TypeError(msg)
 
-    @command(dtype_in=float, doc_in="1st tank final level")
-    @DebugIt()
-    def FindEquilibriumFromH1(self, h1_final_wanted):
-        raise NotImplementedError
-    # TODO: Think if this method is necessary (probably not)
-
     @command(dtype_in=float, doc_in="Control value for model initalisation")
     @DebugIt()
     def GetEquilibriumFromControl(self, control_value):
@@ -169,8 +163,10 @@ class TanksOptimalControl(Device):
     @DebugIt()
     def RunSimulation(self):
         if not self.control_value:
-            self.control_value = self.Tank1Outflow * sqrt(self.h1_final)
-            # TODO: set control to mean of control values for all three levels
+            control_h1 = self.Tank1Outflow * sqrt(self.h1_final)
+            control_h2 = self.Tank2Outflow * sqrt(self.h2_final)
+            control_h3 = self.Tank3Outflow * sqrt(self.h3_final)
+            self.control_value = (control_h1 + control_h2 + control_h3) / 3.0
         checks = self.check_equilibrium(self.control_value)
         if False in checks:
             self.warn_stream("At least one of levels is not from equilibrium")
@@ -192,8 +188,31 @@ class TanksOptimalControl(Device):
             self.set_state(DevState.ALARM)
             self.set_status("Optimal solution not found")
 
-    # TODO: add a command for verifying optimisation results (it should
-    # "normalise" control to either 0 or u_max)
+    @command
+    @DebugIt()
+    def NormaliseOptimalControl(self):
+        if self.t_opt == -1:
+            msg = "Optimisation not yet performed!"
+            self.warn_stream(msg)
+            raise TypeError(msg)
+        else:
+            for i, ctrl_value in enumerate(self.optimal_control):
+                if ctrl_value < 25:
+                    self.optimal_control[i] = 0.0
+                elif 25 <= ctrl_value < 50:
+                    self.warn_stream("Control point %d unusual: %f" %
+                                     (i, ctrl_value))
+                    self.optimal_control[i] = 0.0
+                elif 50 <= ctrl_value < 75:
+                    self.warn_stream("Control point %d unusual: %f" %
+                                     (i, ctrl_value))
+                    self.optimal_control[i] = self.MaxControl
+                else:
+                    self.optimal_control[i] = self.MaxControl
+            switch_times = self.get_switch_times()
+            print switch_times
+
+    # TODO: add a command for verifying optimisation results
 
     # TODO: add communication with an external process via TCP
 
@@ -302,6 +321,16 @@ class TanksOptimalControl(Device):
         outflow = getattr(self, "Tank%dOutflow" % switch)
         eq = control ** 2 / outflow ** 2
         return eq
+
+    @DebugIt(show_ret=True)
+    def get_switch_times(self):
+        switch_times = []
+        for i in xrange(len(self.optimal_control) - 1):
+            if abs(self.optimal_control[i+1] - self.optimal_control[i]) > 1:
+                switch_times.append(i)
+        time_step = self.t_opt / len(self.optimal_control)
+        switch_times = [index * time_step for index in switch_times]
+        return switch_times
 
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__

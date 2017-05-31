@@ -26,7 +26,7 @@ def main():
 
     # Set inputs for Stationary point B
     init_model.reset()  # reset the FMU so that we can initialize it again
-    u_0_B = 78.0
+    u_0_B = 55.0
     init_model.set('u', u_0_B)
     # Solve the initialization problem using FMI
     init_model.initialize()
