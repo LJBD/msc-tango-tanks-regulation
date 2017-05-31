@@ -1,6 +1,7 @@
 from time import sleep
 
 from PyTango import DeviceProxy, DevState
+from matplotlib import pyplot
 from numpy import linspace
 
 from ds_tanks.tanks_utils import plot_results
@@ -24,6 +25,34 @@ def main():
                      opt_dev.read_attribute("OptimalH2").value,
                      opt_dev.read_attribute("OptimalH3").value,
                      time, opt_control, "Optimised with TanksOptimalControl")
+
+
+def plot_with_optimal_trajectories(time_res, time_sim, h1, h2, h3, h1_opt,
+                                   h2_opt, h3_opt):
+    pyplot.close(3)
+    pyplot.figure(3)
+    # pyplot.hold(True)
+    pyplot.subplot(3, 1, 1)
+    pyplot.plot(time_res, h1_opt, '--')
+    pyplot.plot(time_sim, h1)
+    pyplot.legend(('optimized', 'simulated'))
+    pyplot.grid(True)
+    pyplot.ylabel('1st level')
+    pyplot.title('Verification')
+
+    pyplot.subplot(3, 1, 2)
+    pyplot.plot(time_res, h2_opt, '--')
+    pyplot.plot(time_sim, h2)
+    pyplot.grid(True)
+    pyplot.ylabel('Temperature')
+
+    pyplot.subplot(3, 1, 3)
+    pyplot.plot(time_res, h3_opt, '--')
+    pyplot.plot(time_sim, h3)
+    pyplot.grid(True)
+    pyplot.ylabel('Cooling temperature')
+    pyplot.xlabel('time')
+    pyplot.show()
 
 
 if __name__ == '__main__':
