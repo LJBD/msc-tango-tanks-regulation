@@ -162,14 +162,14 @@ class TanksOptimalControl(Device):
     @command
     @DebugIt()
     def RunSimulation(self):
-        if not self.control_value:
+        checks = self.check_equilibrium(self.control_value or 0.0)
+        if False in checks:
             control_h1 = self.Tank1Outflow * sqrt(self.h1_final)
             control_h2 = self.Tank2Outflow * sqrt(self.h2_final)
             control_h3 = self.Tank3Outflow * sqrt(self.h3_final)
             self.control_value = (control_h1 + control_h2 + control_h3) / 3.0
-        checks = self.check_equilibrium(self.control_value)
-        if False in checks:
-            self.warn_stream("At least one of levels is not from equilibrium")
+            self.warn_stream("At least one of levels is not from equilibrium,"
+                             "setting control to %f" % self.control_value)
         self.h1_sim, self.h2_sim, self.h3_sim, self.init_result =\
             simulate_tanks(self.model_path, u=self.control_value)
 
