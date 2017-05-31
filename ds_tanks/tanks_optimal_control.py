@@ -170,6 +170,7 @@ class TanksOptimalControl(Device):
     def RunSimulation(self):
         if not self.control_value:
             self.control_value = self.Tank1Outflow * sqrt(self.h1_final)
+            # TODO: set control to mean of control values for all three levels
         checks = self.check_equilibrium(self.control_value)
         if False in checks:
             self.warn_stream("At least one of levels is not from equilibrium")
