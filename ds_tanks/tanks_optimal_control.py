@@ -28,7 +28,7 @@ class TanksOptimalControl(Device):
     init_model = None
     op = None
     control_value = None
-    simulation_result = None
+    sim_result = None
     optimal_control = [0.0]
     optimal_h1 = [0.0]
     optimal_h2 = [0.0]
@@ -185,18 +185,18 @@ class TanksOptimalControl(Device):
                 self.warn_stream("At least one of levels is not from"
                                  "equilibrium, setting control to %f" %
                                  self.control_value)
-            self.simulation_result = simulate_tanks(self.model_path,
-                                                    u=self.control_value,
-                                                    t_final=self.SimulationFinalTime)
+            self.sim_result = simulate_tanks(self.model_path,
+                                             u=self.control_value,
+                                             t_final=self.SimulationFinalTime)
             self.extract_simulation_levels()
         elif self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"
             self.warn_stream(msg)
             raise Exception(msg)
         else:
-            self.simulation_result = simulate_tanks(self.model_path,
-                                                    u=self.optimal_control,
-                                                    t_final=self.t_opt)
+            self.sim_result = simulate_tanks(self.model_path,
+                                             u=self.optimal_control,
+                                             t_final=self.t_opt)
             self.extract_simulation_levels()
 
     @command
@@ -204,7 +204,7 @@ class TanksOptimalControl(Device):
     def Optimise(self):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
-        opt_options = self.prepare_optimisation(self.simulation_result)
+        opt_options = self.prepare_optimisation(self.sim_result)
         # TODO: run optimisation should be done in another process/thread
         opt_success = self.run_optimisation(opt_options)
         if opt_success:
@@ -294,10 +294,10 @@ class TanksOptimalControl(Device):
     # Other methods
     # -------------
     def extract_simulation_levels(self):
-        self.h1_sim = self.simulation_result['h1']
-        self.h2_sim = self.simulation_result['h2']
-        self.h3_sim = self.simulation_result['h3']
-        self.t_sim = self.simulation_result["time"]
+        self.h1_sim = self.sim_result['h1']
+        self.h2_sim = self.sim_result['h2']
+        self.h3_sim = self.sim_result['h3']
+        self.t_sim = self.sim_result["time"]
 
     def set_outflow_values(self):
         self.init_model.set("C1", float(self.Tank1Outflow))
