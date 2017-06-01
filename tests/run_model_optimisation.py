@@ -1,4 +1,4 @@
-from pyfmi.fmi import load_fmu
+from pyfmi.fmi import load_fmu, FMUException
 
 from ds_tanks.tanks_utils import plot_results, U_MAX, simulate_tanks, \
     print_stationary_point, get_model_path
@@ -90,8 +90,21 @@ def main():
     # Plot the results
     plot_results(h1_res, h2_res, h3_res, time_res, u_res,
                  title="Optimised trajectories")
-    simulate_tanks(model_path, u=u_res, t_final=time_res[-1],
-                   with_plots=True)
+
+    normalised_u = []
+    for val in u_res:
+        if val < 50:
+            normalised_u.append(0)
+        else:
+            normalised_u.append(U_MAX)
+    for i in xrange(10):
+        print i
+        try:
+            simulate_tanks(model_path, u=normalised_u, t_final=time_res[-1],
+                           with_plots=True)
+            break
+        except FMUException:
+            pass
 
 
 if __name__ == '__main__':

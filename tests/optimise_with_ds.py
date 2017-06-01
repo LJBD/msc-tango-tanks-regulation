@@ -28,7 +28,7 @@ def main(with_commands=True):
         opt_h3 = opt_dev.read_attribute("OptimalH3").value
         # plot_results(opt_h1, opt_h2, opt_h3, time, opt_control,
         #              "Optimised with TanksOptimalControl")
-        opt_dev.command_inout_asynch("RunSimulation", 1)
+        # opt_dev.command_inout_asynch("RunSimulation", 1)
         h1_sim = opt_dev.read_attribute("H1Simulated").value
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
@@ -39,4 +39,4 @@ def main(with_commands=True):
 
 
 if __name__ == '__main__':
-    main(True)
+    main(False)
