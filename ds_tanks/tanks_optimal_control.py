@@ -49,6 +49,8 @@ class TanksOptimalControl(Device):
                                    doc="Outflow coefficient of the 2nd tank.")
     Tank3Outflow = device_property(dtype=float, default_value=28,
                                    doc="Outflow coefficient of the 3rd tank.")
+    SimulationTime = device_property(dtype=float, default_value=50.0,
+                                     doc="Final time for a simulation")
 
     # ----------
     # Attributes
@@ -180,7 +182,8 @@ class TanksOptimalControl(Device):
                                  "equilibrium, setting control to %f" %
                                  self.control_value)
             self.init_result = simulate_tanks(self.model_path,
-                                              u=self.control_value)
+                                              u=self.control_value,
+                                              t_final=self.SimulationTime)
             self.extract_simulation_levels()
         elif self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"

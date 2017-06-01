@@ -12,12 +12,13 @@ def main(with_commands=True):
     if with_commands:
         print "Getting initial values..."
         opt_dev.command_inout_asynch("GetEquilibriumFromControl", 73.5)
-        sleep(1)
+        sleep(5)
         print "Running simulation..."
         opt_dev.command_inout_asynch("RunSimulation", 0)
-        sleep(1)
+        sleep(5)
         print "Optimising..."
         opt_dev.command_inout_asynch("Optimise")
+        sleep(5)
     if opt_dev.state() == DevState.ON:
         opt_control = opt_dev.read_attribute("OptimalControl").value
         opt_time = opt_dev.read_attribute("T_opt").value
@@ -38,4 +39,4 @@ def main(with_commands=True):
 
 
 if __name__ == '__main__':
-    main(False)
+    main(True)
