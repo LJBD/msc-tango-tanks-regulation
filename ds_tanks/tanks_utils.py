@@ -48,7 +48,7 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
         # Plot the initial guess trajectories
         plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim,
                      u_init_sim, title='Initial guess obtained by simulation')
-    return h1_init_sim, h2_init_sim, h3_init_sim, init_res
+    return init_res
 
 
 def get_initialisation_values(model_path, control_value):
@@ -76,7 +76,6 @@ def get_model_path(model_file="opt_3_tanks.mop"):
 def plot_results(h1, h2, h3, time, u, title):
     pyplot.close(1)
     pyplot.figure(1)
-    # pyplot.hold(True)
     pyplot.subplot(2, 1, 1)
     pyplot.plot(time, h1, 'r', time, h2, 'g',
                 time, h3, 'b')
@@ -89,6 +88,38 @@ def plot_results(h1, h2, h3, time, u, title):
     pyplot.grid()
     pyplot.ylabel('Control')
     pyplot.xlabel('Time')
+    pyplot.show()
+
+
+def plot_with_optimal_trajectories(time_res, time_sim, h1, h2, h3, h1_opt,
+                                   h2_opt, h3_opt, u_opt):
+    pyplot.close(3)
+    pyplot.figure(4)
+    pyplot.subplot(4, 1, 1)
+    pyplot.plot(time_res, h1_opt, '--')
+    pyplot.plot(time_sim, h1)
+    pyplot.legend(('optimized', 'simulated'))
+    pyplot.grid(True)
+    pyplot.ylabel('1st level')
+    pyplot.title('Verification')
+
+    pyplot.subplot(4, 1, 2)
+    pyplot.plot(time_res, h2_opt, '--')
+    pyplot.plot(time_sim, h2)
+    pyplot.grid(True)
+    pyplot.ylabel('2nd level')
+
+    pyplot.subplot(4, 1, 3)
+    pyplot.plot(time_res, h3_opt, '--')
+    pyplot.plot(time_sim, h3)
+    pyplot.grid(True)
+    pyplot.ylabel('3rd level')
+
+    pyplot.subplot(4, 1, 4)
+    pyplot.plot(time_res, u_opt)
+    pyplot.grid(True)
+    pyplot.ylabel("Optimal control")
+    pyplot.xlabel('time')
     pyplot.show()
 
 

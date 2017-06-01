@@ -35,8 +35,11 @@ def main():
     # Print some data for stationary point B
     print_stationary_point('B', h1_0_B, h2_0_B, h3_0_B, u_0_B)
 
-    h1_sim, h2_sim, h3_sim, init_res = simulate_tanks(model_path, u=u_0_B,
-                                                      with_plots=True)
+    init_res = simulate_tanks(model_path, u=u_0_B, with_plots=True)
+
+    h1_sim = init_res['h1']
+    h2_sim = init_res['h2']
+    h3_sim = init_res['h3']
 
     h1_sim_final = h1_sim[-1]
     h2_sim_final = h2_sim[-1]

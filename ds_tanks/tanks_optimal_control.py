@@ -168,6 +168,7 @@ class TanksOptimalControl(Device):
                                   "simulation with optimal control")
     @DebugIt()
     def RunSimulation(self, switch):
+        # TODO: simulation should be run in a separate process/thread
         if switch == 0:
             checks = self.check_equilibrium(self.control_value or 0.0)
             if False in checks:
@@ -178,16 +179,18 @@ class TanksOptimalControl(Device):
                 self.warn_stream("At least one of levels is not from"
                                  "equilibrium, setting control to %f" %
                                  self.control_value)
-            self.h1_sim, self.h2_sim, self.h3_sim, self.init_result =\
-                simulate_tanks(self.model_path, u=self.control_value)
+            self.init_result = simulate_tanks(self.model_path,
+                                              u=self.control_value)
+            self.extract_simulation_levels()
         elif self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"
             self.warn_stream(msg)
             raise Exception(msg)
         else:
-            self.h1_sim, self.h2_sim, self.h3_sim, self.init_result = \
-                simulate_tanks(self.model_path, u=self.optimal_control,
-                               t_final=self.t_opt)
+            self.init_result = simulate_tanks(self.model_path,
+                                              u=self.optimal_control,
+                                              t_final=self.t_opt)
+            self.extract_simulation_levels()
 
     @command
     @DebugIt()
@@ -282,12 +285,17 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
+    def extract_simulation_levels(self):
+        self.h1_sim = self.init_result['h1']
+        self.h2_sim = self.init_result['h2']
+        self.h3_sim = self.init_result['h3']
+
     def set_outflow_values(self):
         self.init_model.set("C1", float(self.Tank1Outflow))
         self.init_model.set("C2", float(self.Tank2Outflow))
         self.init_model.set("C3", float(self.Tank3Outflow))
 
-    def prepare_optimisation(self, init_res):
+    def prepare_optimisation(self, init_result):
         # 3. Solve the optimal control problem
         # Compile and load optimization problem
         optimisation_model = "TanksPkg.three_tanks_time_optimal"
@@ -307,7 +315,7 @@ class TanksOptimalControl(Device):
         opt_opts = self.op.optimize_options()
         # opt_opts['n_e'] = 80  # Number of elements
         opt_opts['variable_scaling'] = False
-        opt_opts['init_traj'] = init_res
+        opt_opts['init_traj'] = init_result
         opt_opts['IPOPT_options']['tol'] = self.IPOPTTolerance
         opt_opts['verbosity'] = 1
         return opt_opts
