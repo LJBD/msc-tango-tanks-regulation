@@ -52,6 +52,11 @@ class TanksOptimalControl(Device):
                                    doc="Outflow coefficient of the 3rd tank.")
     SimulationFinalTime = device_property(dtype=float, default_value=50.0,
                                           doc="Final time for a simulation")
+    ServerAddressPort = device_property(dtype=str,
+                                        default_value="localhost:4567",
+                                        doc="Address and port (separated by a"
+                                            "':') to which the TCP server"
+                                            "should be bound.")
 
     # ----------
     # Attributes
@@ -237,7 +242,12 @@ class TanksOptimalControl(Device):
                     self.optimal_control[i] = self.MaxControl
             self.get_switch_times()
 
-    # TODO: add communication with an external process via TCP
+    @command
+    @DebugIt()
+    def SendSwitchTimes(self):
+        if not self.switch_times:
+            self.NormaliseOptimalControl()
+    # TODO: add communication with Matlab via TCP handled in a process/thread
 
     # -----------------
     # Attribute methods
