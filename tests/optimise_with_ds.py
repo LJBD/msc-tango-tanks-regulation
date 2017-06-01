@@ -32,7 +32,7 @@ def main(with_commands=True):
         h1_sim = opt_dev.read_attribute("H1Simulated").value
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
-        time_sim = linspace(0.0, opt_time, len(h1_sim))
+        time_sim = opt_dev.read_attribute("SimulationTime").value
         plot_with_optimal_trajectories(time_opt, time_sim, h1_sim, h2_sim,
                                        h3_sim, opt_h1, opt_h2, opt_h3,
                                        opt_control)

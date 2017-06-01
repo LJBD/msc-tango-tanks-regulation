@@ -1,7 +1,7 @@
 from pyfmi.fmi import load_fmu, FMUException
 
 from ds_tanks.tanks_utils import plot_results, U_MAX, simulate_tanks, \
-    print_stationary_point, get_model_path
+    print_stationary_point, get_model_path, plot_with_optimal_trajectories
 from pymodelica import compile_fmu
 from pyjmi import transfer_optimization_problem
 
@@ -26,7 +26,7 @@ def main():
 
     # Set inputs for Stationary point B
     init_model.reset()  # reset the FMU so that we can initialize it again
-    u_0_B = 55.0
+    u_0_B = 88.0
     init_model.set('u', u_0_B)
     # Solve the initialization problem using FMI
     init_model.initialize()
@@ -100,8 +100,13 @@ def main():
     for i in xrange(10):
         print i
         try:
-            simulate_tanks(model_path, u=normalised_u, t_final=time_res[-1],
-                           with_plots=True)
+            sim_result = simulate_tanks(model_path, u=normalised_u,
+                                        t_final=time_res[-1],
+                                        with_plots=True)
+            plot_with_optimal_trajectories(time_res, sim_result['time'],
+                                           sim_result["h1"], sim_result["h2"],
+                                           sim_result["h3"], h1_res, h2_res,
+                                           h3_res, normalised_u)
             break
         except FMUException:
             pass
