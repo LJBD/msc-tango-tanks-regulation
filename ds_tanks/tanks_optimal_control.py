@@ -66,6 +66,10 @@ class TanksOptimalControl(Device):
                                                "a ':') of a remote direct"
                                                "control application.",
                                            default_value="localhost:8888")
+    SendControlMode = device_property(dtype=str, default_value='SwitchTimes',
+                                      doc="Type of control to be sent to a"
+                                          "direct control application. Either"
+                                          "of: SwitchTimes or FullTrajectory.")
 
     # ----------
     # Attributes
