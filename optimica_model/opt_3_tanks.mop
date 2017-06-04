@@ -12,9 +12,9 @@ package TanksPkg
         parameter Modelica.SIunits.VolumeFlowRate C2 = 26.0 "2nd tank's outflow rate";
         parameter Modelica.SIunits.VolumeFlowRate C3 = 28.0 "3rd tank's outflow rate";
 
-        parameter Modelica.SIunits.Length h10 = 10.0 "1st tank's initial value";
-        parameter Modelica.SIunits.Length h20 = 10.0 "2nd tank's initial value";
-        parameter Modelica.SIunits.Length h30 = 10.0 "3rd tank's initial value";
+        parameter Modelica.SIunits.Length h10 = 20.0 "1st tank's initial value";
+        parameter Modelica.SIunits.Length h20 = 20.0 "2nd tank's initial value";
+        parameter Modelica.SIunits.Length h30 = 20.0 "3rd tank's initial value";
 
         parameter Real u_max = 20.0 "Maximum control value";
 

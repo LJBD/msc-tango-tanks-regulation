@@ -231,6 +231,8 @@ class TanksOptimalControl(Device):
                                              tank2_outflow=self.Tank2Outflow,
                                              tank3_outflow=self.Tank3Outflow)
             self.extract_simulation_levels()
+        self.set_state(DevState.ON)
+        self.set_status("Simulation completed.")
 
     @command
     @DebugIt()
