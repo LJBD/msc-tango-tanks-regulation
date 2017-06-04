@@ -163,6 +163,10 @@ class TanksOptimalControl(Device):
     @command(dtype_in=float, doc_in="Control value for model initalisation")
     @DebugIt()
     def GetEquilibriumFromControl(self, control_value):
+        if not 0 <= control_value <= self.MaxControl:
+            msg = "Control not in range <0, %f>" % self.MaxControl
+            self.warn_stream(msg)
+            raise Exception(msg)
         self.control_value = control_value
         if not self.init_model:
             self.LoadInitialModel()
@@ -204,7 +208,10 @@ class TanksOptimalControl(Device):
                                  self.control_value)
             self.sim_result = simulate_tanks(self.model_path,
                                              u=self.control_value,
-                                             t_final=self.SimulationFinalTime)
+                                             t_final=self.SimulationFinalTime,
+                                             tank1_outflow=self.Tank1Outflow,
+                                             tank2_outflow=self.Tank2Outflow,
+                                             tank3_outflow=self.Tank3Outflow)
             self.extract_simulation_levels()
         elif self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"
@@ -213,7 +220,10 @@ class TanksOptimalControl(Device):
         else:
             self.sim_result = simulate_tanks(self.model_path,
                                              u=self.optimal_control,
-                                             t_final=self.t_opt)
+                                             t_final=self.t_opt,
+                                             tank1_outflow=self.Tank1Outflow,
+                                             tank2_outflow=self.Tank2Outflow,
+                                             tank3_outflow=self.Tank3Outflow)
             self.extract_simulation_levels()
 
     @command
@@ -370,7 +380,7 @@ class TanksOptimalControl(Device):
 
     def get_switch_times(self):
         switch_times = []
-        for i in xrange(len(self.optimal_control) - 1):
+        for i in range(len(self.optimal_control) - 1):
             if abs(self.optimal_control[i+1] - self.optimal_control[i]) > 1:
                 switch_times.append(i)
         time_step = self.t_opt / len(self.optimal_control)

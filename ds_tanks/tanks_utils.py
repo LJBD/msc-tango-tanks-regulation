@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 import numpy
@@ -35,6 +36,7 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     if hasattr(u, "__len__"):
         t = numpy.linspace(0.0, t_final, len(u))
         u_traj = numpy.transpose(numpy.vstack((t, u)))
+        print("CONTROL TRAJECTORY TO BE USED:\n", u_traj)
         init_res = init_sim_model.simulate(start_time=t_start,
                                            final_time=t_final,
                                            input=('u', u_traj))
@@ -72,7 +74,6 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     # Compile and load optimization problem
     optimisation_model = "TanksPkg.three_tanks_time_optimal"
     op = transfer_optimization_problem(optimisation_model, model_path)
-    print "Created OP definition"
     # Set outflow values from properties
     op.set("C1", float(tank1_outflow))
     op.set("C2", float(tank2_outflow))
@@ -82,7 +83,6 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     op.set('h2_final', float(h2_final))
     op.set('h3_final', float(h3_final))
     op.set('u_max', max_control)
-    print "Optimisation values setup."
 
     # Set options
     opt_options = op.optimize_options()
@@ -93,7 +93,6 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     opt_options['verbosity'] = 1
     # Solve the optimal control problem
     res = op.optimize(options=opt_options)
-    print "Optimisation complete!"
     opt_result = {"h1": res['h1'], "h2": res['h2'], "h3": res['h3'],
                   "u": res['u'], "time": res['time']}
     return opt_result

@@ -69,6 +69,7 @@ package TanksPkg
             h1(finalTime)=h1_final;
             h2(finalTime)=h2_final;
             h3(finalTime)=h3_final;
+            finalTime >= 0;
             h1 <= h_max;
             h1 >= 0;
             h2 <= h_max;

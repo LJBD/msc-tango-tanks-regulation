@@ -1,22 +1,22 @@
+from __future__ import print_function
 from time import sleep
 
 from PyTango import DeviceProxy, DevState
-from PyTango._PyTango import DevFailed
 from numpy import linspace
 
-from ds_tanks.tanks_utils import plot_results, plot_with_optimal_trajectories
+from ds_tanks.tanks_utils import plot_with_optimal_trajectories
 
 
 def main(with_commands=True):
     opt_dev = DeviceProxy("opt/ctrl/1")
     if with_commands:
-        print "Getting initial values..."
+        print("Getting initial values...")
         opt_dev.command_inout_asynch("GetEquilibriumFromControl", 73.5)
         sleep(5)
-        print "Running simulation..."
+        print("Running simulation...")
         opt_dev.command_inout_asynch("RunSimulation", 0)
         sleep(5)
-        print "Optimising..."
+        print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
         sleep(5)
     if opt_dev.state() == DevState.ON:
