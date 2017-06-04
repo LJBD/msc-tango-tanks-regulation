@@ -90,15 +90,15 @@ class TanksOptimalControl(Device):
                       doc="Optimal time from optimisation")
     H1Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                         label="H1 Final", fget="read_h1_final",
-                        fset="write_h1_final",
+                        fset="write_h1_final", min_value=0.0, max_value=40.0,
                         doc="Final value of level in 1st tank")
     H2Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                         label="H2 Final", fget="read_h2_final",
-                        fset="write_h2_final",
+                        fset="write_h2_final", min_value=0.0, max_value=40.0,
                         doc="Final value of level in 2nd tank")
     H3Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                         label="H3 Final", fget="read_h3_final",
-                        fset="write_h3_final",
+                        fset="write_h3_final", min_value=0.0, max_value=40.0,
                         doc="Final value of level in 3rd tank")
     OptimalControl = attribute(dtype=(float,), max_dim_x=10000,
                                fget="read_optimal_control",
@@ -199,6 +199,8 @@ class TanksOptimalControl(Device):
                                   "simulation with optimal control")
     @DebugIt()
     def RunSimulation(self, switch):
+        if self.get_state() == DevState.OFF:
+            self.LoadInitialModel()
         # TODO: simulation should be run in a separate process/thread
         if switch == 0:
             checks = self.check_equilibrium(self.control_value or 0.0)
