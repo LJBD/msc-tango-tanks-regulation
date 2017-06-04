@@ -10,6 +10,7 @@ U_MAX = 100.0
 
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
+                   tank1_outflow=26, tank2_outflow=26, tank3_outflow=28,
                    with_plots=False):
     """
     Simulate tanks model.
@@ -17,6 +18,9 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     :param u: either a constant value or a vector of input
     :param t_start: starting time for the simulation
     :param t_final: final time for the simulation
+    :param tank1_outflow: outflow coefficient of the 1st tanks
+    :param tank2_outflow: outflow coefficient of the 2nd tanks
+    :param tank3_outflow: outflow coefficient of the 3rd tanks
     :param with_plots: should the plots be displayed
     :return: None
     """
@@ -25,6 +29,9 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
     # Load the model
     init_sim_model = load_fmu(init_sim_fmu)
+    init_sim_model.set("C1", float(tank1_outflow))
+    init_sim_model.set("C2", float(tank2_outflow))
+    init_sim_model.set("C3", float(tank3_outflow))
     if hasattr(u, "__len__"):
         t = numpy.linspace(0.0, t_final, len(u))
         u_traj = numpy.transpose(numpy.vstack((t, u)))
@@ -50,13 +57,22 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     return init_res
 
 
-def prepare_optimisation(model_path, init_result, tank1_outflow, tank2_outflow,
-                         tank3_outflow, h1_final, h2_final, h3_final,
-                         max_control, ipopt_tolerance=1e-3):
+def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
+                     h1_final, h2_final, h3_final, max_control, sim_control,
+                     ipopt_tolerance=1e-3, t_start=0, t_final=50.0,):
+    # 2. Compute initial guess trajectories by means of simulation
+    # Compile the optimization initialization model
+    init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
+    # Load the model
+    init_sim_model = load_fmu(init_sim_fmu)
+    init_sim_model.set('u', sim_control)
+    init_result = init_sim_model.simulate(start_time=t_start,
+                                          final_time=t_final)
     # 3. Solve the optimal control problem
     # Compile and load optimization problem
     optimisation_model = "TanksPkg.three_tanks_time_optimal"
     op = transfer_optimization_problem(optimisation_model, model_path)
+    print "Created OP definition"
     # Set outflow values from properties
     op.set("C1", float(tank1_outflow))
     op.set("C2", float(tank2_outflow))
@@ -66,21 +82,21 @@ def prepare_optimisation(model_path, init_result, tank1_outflow, tank2_outflow,
     op.set('h2_final', float(h2_final))
     op.set('h3_final', float(h3_final))
     op.set('u_max', max_control)
+    print "Optimisation values setup."
 
     # Set options
-    opt_opts = op.optimize_options()
-    # opt_opts['n_e'] = 80  # Number of elements
-    opt_opts['variable_scaling'] = False
-    opt_opts['init_traj'] = init_result
-    opt_opts['IPOPT_options']['tol'] = ipopt_tolerance
-    opt_opts['verbosity'] = 1
-    return op, opt_opts
-
-def run_optimisation(op, opt_options):
-    # TODO: handle launching optimisation in a different process
+    opt_options = op.optimize_options()
+    # opt_options['n_e'] = 80  # Number of elements
+    opt_options['variable_scaling'] = False
+    opt_options['init_traj'] = init_result
+    opt_options['IPOPT_options']['tol'] = ipopt_tolerance
+    opt_options['verbosity'] = 1
     # Solve the optimal control problem
     res = op.optimize(options=opt_options)
-    return res
+    print "Optimisation complete!"
+    opt_result = {"h1": res['h1'], "h2": res['h2'], "h3": res['h3'],
+                  "u": res['u'], "time": res['time']}
+    return opt_result
 
 
 def get_initialisation_values(model_path, control_value):

@@ -1,12 +1,15 @@
+from multiprocessing import Pool
+
 from PyTango import DevState, DebugIt, AttrWriteType
 from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from math import sqrt
+
 from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
 
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
-    run_optimisation, prepare_optimisation
+    run_optimisation
 
 
 class TanksOptimalControl(Device):
@@ -34,6 +37,7 @@ class TanksOptimalControl(Device):
     optimal_h2 = [0.0]
     optimal_h3 = [0.0]
     switch_times = []
+    process_pool = Pool()
 
     # ----------
     # Properties
@@ -42,7 +46,7 @@ class TanksOptimalControl(Device):
                                      doc="Tolerance of IPOPT solver.")
     ModelFile = device_property(dtype=str, default_value="opt_3_tanks.mop",
                                 doc="Name of a file containing model.")
-    MaxControl = device_property(dtype=int, default_value=100,
+    MaxControl = device_property(dtype=float, default_value=100,
                                  doc="Maximum value of control")
     Tank1Outflow = device_property(dtype=float, default_value=26,
                                    doc="Outflow coefficient of the 1st tank.")
@@ -118,6 +122,10 @@ class TanksOptimalControl(Device):
         self.set_status("Model not loaded.")
         self.model_path = get_model_path(model_file=self.ModelFile)
         self.info_stream("Project path: %s" % self.model_path)
+
+    def delete_device(self):
+        self.process_pool.join()
+        super(TanksOptimalControl, self).delete_device()
 
     @command
     @DebugIt()
@@ -213,24 +221,20 @@ class TanksOptimalControl(Device):
     def Optimise(self):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
-        op, self.opt_options = prepare_optimisation(self.model_path,
-                                                    self.sim_result,
-                                                    self.Tank1Outflow,
-                                                    self.Tank2Outflow,
-                                                    self.Tank3Outflow,
-                                                    self.h1_final,
-                                                    self.h2_final,
-                                                    self.h3_final,
-                                                    self.MaxControl,
-                                                    self.IPOPTTolerance)
-        opt_result = run_optimisation(op, self.opt_options)
-        opt_success = self.set_optimisation_result(opt_result)
-        if opt_success:
-            self.set_state(DevState.ON)
-            self.set_status("Optimal solution found!")
-        else:
-            self.set_state(DevState.ALARM)
-            self.set_status("Optimal solution not found")
+        res = self.process_pool.apply_async(run_optimisation,
+                                            (self.model_path,
+                                             self.Tank1Outflow,
+                                             self.Tank2Outflow,
+                                             self.Tank3Outflow,
+                                             self.h1_final,
+                                             self.h2_final,
+                                             self.h3_final,
+                                             self.MaxControl,
+                                             self.control_value,
+                                             self.IPOPTTolerance,
+                                             0.0,
+                                             self.SimulationFinalTime),
+                                            callback=self.optimisation_ended)
 
     @command
     @DebugIt()
@@ -326,6 +330,17 @@ class TanksOptimalControl(Device):
         self.init_model.set("C1", float(self.Tank1Outflow))
         self.init_model.set("C2", float(self.Tank2Outflow))
         self.init_model.set("C3", float(self.Tank3Outflow))
+
+    def optimisation_ended(self, opt_result):
+        # self.opt_options = opt_options
+        opt_success = self.set_optimisation_result(opt_result)
+        if opt_success:
+            self.set_state(DevState.ON)
+            self.set_status("Optimal solution found!")
+        else:
+            self.set_state(DevState.ALARM)
+            self.set_status("Optimal solution not found")
+        # self.process_pool._join_exited_workers()
 
     def set_optimisation_result(self, res):
         # Extract variable profiles
