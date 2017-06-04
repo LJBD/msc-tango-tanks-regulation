@@ -3,10 +3,10 @@ from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from math import sqrt
 from pyfmi.fmi import load_fmu
-from pyjmi import transfer_optimization_problem
 from pymodelica import compile_fmu
 
-from ds_tanks.tanks_utils import get_model_path, simulate_tanks
+from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
+    run_optimisation, prepare_optimisation
 
 
 class TanksOptimalControl(Device):
@@ -26,7 +26,7 @@ class TanksOptimalControl(Device):
     h2_final = 0.0
     h3_final = 0.0
     init_model = None
-    op = None
+    opt_options = None
     control_value = None
     sim_result = None
     optimal_control = [0.0]
@@ -57,6 +57,11 @@ class TanksOptimalControl(Device):
                                         doc="Address and port (separated by a"
                                             "':') to which the TCP server"
                                             "should be bound.")
+    DirectControlAddress = device_property(dtype=str,
+                                           doc="Address and port (separated by"
+                                               "a ':') of a remote direct"
+                                               "control application.",
+                                           default_value="localhost:8888")
 
     # ----------
     # Attributes
@@ -164,14 +169,13 @@ class TanksOptimalControl(Device):
     @command(dtype_out=str, doc_out="Optimisation options in string format")
     @DebugIt()
     def GetOptimisationOptions(self):
-        if not self.op:
+        if not self.opt_options:
             msg = "Optimisation problem not yet initalised!"
             self.warn_stream(msg)
             raise Exception(msg)
         else:
-            opt_opts = self.op.optimize_options()
             str_opts = "OPTIMISATION OPTIONS:\n"
-            for option, value in opt_opts.items():
+            for option, value in self.opt_options.items():
                 str_opts += '%s: %s\n' % (option, value)
             return str_opts
 
@@ -209,9 +213,18 @@ class TanksOptimalControl(Device):
     def Optimise(self):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
-        opt_options = self.prepare_optimisation(self.sim_result)
-        # TODO: run optimisation should be done in another process/thread
-        opt_success = self.run_optimisation(opt_options)
+        op, self.opt_options = prepare_optimisation(self.model_path,
+                                                    self.sim_result,
+                                                    self.Tank1Outflow,
+                                                    self.Tank2Outflow,
+                                                    self.Tank3Outflow,
+                                                    self.h1_final,
+                                                    self.h2_final,
+                                                    self.h3_final,
+                                                    self.MaxControl,
+                                                    self.IPOPTTolerance)
+        opt_result = run_optimisation(op, self.opt_options)
+        opt_success = self.set_optimisation_result(opt_result)
         if opt_success:
             self.set_state(DevState.ON)
             self.set_status("Optimal solution found!")
@@ -314,34 +327,7 @@ class TanksOptimalControl(Device):
         self.init_model.set("C2", float(self.Tank2Outflow))
         self.init_model.set("C3", float(self.Tank3Outflow))
 
-    def prepare_optimisation(self, init_result):
-        # 3. Solve the optimal control problem
-        # Compile and load optimization problem
-        optimisation_model = "TanksPkg.three_tanks_time_optimal"
-        self.op = transfer_optimization_problem(optimisation_model,
-                                                self.model_path)
-        # Set outflow values from properties
-        self.op.set("C1", float(self.Tank1Outflow))
-        self.op.set("C2", float(self.Tank2Outflow))
-        self.op.set("C3", float(self.Tank3Outflow))
-        # Set initial values
-        self.op.set('h1_final', float(self.h1_final))
-        self.op.set('h2_final', float(self.h2_final))
-        self.op.set('h3_final', float(self.h3_final))
-        self.op.set('u_max', self.MaxControl)
-
-        # Set options
-        opt_opts = self.op.optimize_options()
-        # opt_opts['n_e'] = 80  # Number of elements
-        opt_opts['variable_scaling'] = False
-        opt_opts['init_traj'] = init_result
-        opt_opts['IPOPT_options']['tol'] = self.IPOPTTolerance
-        opt_opts['verbosity'] = 1
-        return opt_opts
-
-    def run_optimisation(self, opt_options):
-        # Solve the optimal control problem
-        res = self.op.optimize(options=opt_options)
+    def set_optimisation_result(self, res):
         # Extract variable profiles
         self.optimal_h1 = res['h1']
         self.optimal_h2 = res['h2']

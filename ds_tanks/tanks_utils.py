@@ -1,11 +1,10 @@
 import os
 
-from math import sqrt
-
 import numpy
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
+from pyjmi import transfer_optimization_problem
 
 U_MAX = 100.0
 
@@ -49,6 +48,39 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
         plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim,
                      u_init_sim, title='Initial guess obtained by simulation')
     return init_res
+
+
+def prepare_optimisation(model_path, init_result, tank1_outflow, tank2_outflow,
+                         tank3_outflow, h1_final, h2_final, h3_final,
+                         max_control, ipopt_tolerance=1e-3):
+    # 3. Solve the optimal control problem
+    # Compile and load optimization problem
+    optimisation_model = "TanksPkg.three_tanks_time_optimal"
+    op = transfer_optimization_problem(optimisation_model, model_path)
+    # Set outflow values from properties
+    op.set("C1", float(tank1_outflow))
+    op.set("C2", float(tank2_outflow))
+    op.set("C3", float(tank3_outflow))
+    # Set initial values
+    op.set('h1_final', float(h1_final))
+    op.set('h2_final', float(h2_final))
+    op.set('h3_final', float(h3_final))
+    op.set('u_max', max_control)
+
+    # Set options
+    opt_opts = op.optimize_options()
+    # opt_opts['n_e'] = 80  # Number of elements
+    opt_opts['variable_scaling'] = False
+    opt_opts['init_traj'] = init_result
+    opt_opts['IPOPT_options']['tol'] = ipopt_tolerance
+    opt_opts['verbosity'] = 1
+    return op, opt_opts
+
+def run_optimisation(op, opt_options):
+    # TODO: handle launching optimisation in a different process
+    # Solve the optimal control problem
+    res = op.optimize(options=opt_options)
+    return res
 
 
 def get_initialisation_values(model_path, control_value):
