@@ -199,8 +199,6 @@ class TanksOptimalControl(Device):
                                   "simulation with optimal control")
     @DebugIt()
     def RunSimulation(self, switch):
-        if self.get_state() == DevState.OFF:
-            self.LoadInitialModel()
         # TODO: simulation should be run in a separate process/thread
         if switch == 0:
             checks = self.check_equilibrium(self.control_value or 0.0)
@@ -279,9 +277,10 @@ class TanksOptimalControl(Device):
 
     @command
     @DebugIt()
-    def SendSwitchTimes(self):
-        if not self.switch_times:
-            self.NormaliseOptimalControl()
+    def SendControl(self):
+        if self.SendControlMode == "SwitchTimes":
+            if not self.switch_times:
+                self.NormaliseOptimalControl()
     # TODO: add communication with Matlab via TCP handled in a process/thread
 
     # -----------------
@@ -358,7 +357,6 @@ class TanksOptimalControl(Device):
         else:
             self.set_state(DevState.ALARM)
             self.set_status("Optimal solution not found")
-        # self.process_pool._join_exited_workers()
 
     def set_optimisation_result(self, res):
         # Extract variable profiles
