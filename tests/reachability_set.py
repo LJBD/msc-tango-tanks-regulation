@@ -45,7 +45,6 @@ class ReachabilitySetsCalculator:
             init_sim_model = load_fmu(init_sim_fmu)
         # Set initial and reference values
         init_sim_model.set('u', U_MAX)
-        # TODO: develop a way to include real u calculation here
         # Simulate with constant input Tc
         init_res = init_sim_model.simulate(start_time=t_start,
                                            final_time=t_final)
