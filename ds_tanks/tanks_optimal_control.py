@@ -143,7 +143,7 @@ class TanksOptimalControl(Device):
             init_fmu = compile_fmu("TanksPkg.ThreeTanksInit", self.model_path)
             self.init_model = load_fmu(init_fmu)
             self.set_outflow_values()
-            self.set_state(DevState.ON)
+            self.set_state(DevState.STANDBY)
             self.set_status("Initial model loaded.")
         else:
             msg = "Initial model already loaded."
@@ -187,6 +187,8 @@ class TanksOptimalControl(Device):
                                   "simulation with optimal control")
     @DebugIt()
     def RunSimulation(self, switch):
+        self.set_state(DevState.ON)
+        self.set_status("Launching simulation...")
         if switch == 0:
             checks = self.check_equilibrium(self.control_value or 0.0)
             if False in checks:
@@ -331,7 +333,7 @@ class TanksOptimalControl(Device):
         self.h2_sim = sim_result['h2']
         self.h3_sim = sim_result['h3']
         self.t_sim = sim_result["time"]
-        self.set_state(DevState.ON)
+        self.set_state(DevState.STANDBY)
         self.set_status("Simulation complete.")
 
     def set_outflow_values(self):
@@ -342,7 +344,7 @@ class TanksOptimalControl(Device):
     def optimisation_ended(self, opt_result):
         opt_success = self.set_optimisation_result(opt_result)
         if opt_success:
-            self.set_state(DevState.ON)
+            self.set_state(DevState.STANDBY)
             self.set_status("Optimal solution found!")
         else:
             self.set_state(DevState.ALARM)

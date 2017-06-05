@@ -19,7 +19,7 @@ def main(with_commands=True):
         print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
         sleep(5)
-    if opt_dev.state() == DevState.ON:
+    if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
         opt_time = opt_dev.read_attribute("T_opt").value
         time_opt = linspace(0.0, opt_time, len(opt_control))
@@ -36,6 +36,8 @@ def main(with_commands=True):
         plot_with_optimal_trajectories(time_opt, time_sim, h1_sim, h2_sim,
                                        h3_sim, opt_h1, opt_h2, opt_h3,
                                        opt_control)
+    else:
+        print("Wrong state, exiting!")
 
 
 if __name__ == '__main__':
