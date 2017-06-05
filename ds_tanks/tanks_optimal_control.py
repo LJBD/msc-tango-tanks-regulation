@@ -29,7 +29,6 @@ class TanksOptimalControl(Device):
     h2_final = 0.0
     h3_final = 0.0
     init_model = None
-    opt_options = None
     control_value = None
     sim_result = None
     optimal_control = [0.0]
@@ -181,19 +180,6 @@ class TanksOptimalControl(Device):
         [self.h1_final,
          self.h2_final,
          self.h3_final] = self.init_model.get(['h1', 'h2', 'h3'])
-
-    @command(dtype_out=str, doc_out="Optimisation options in string format")
-    @DebugIt()
-    def GetOptimisationOptions(self):
-        if not self.opt_options:
-            msg = "Optimisation problem not yet initalised!"
-            self.warn_stream(msg)
-            raise Exception(msg)
-        else:
-            str_opts = "OPTIMISATION OPTIONS:\n"
-            for option, value in self.opt_options.items():
-                str_opts += '%s: %s\n' % (option, value)
-            return str_opts
 
     @command(dtype_in=int, doc_in="0 for normal simulation and 1 for"
                                   "simulation with optimal control")
@@ -349,7 +335,6 @@ class TanksOptimalControl(Device):
         self.init_model.set("C3", float(self.Tank3Outflow))
 
     def optimisation_ended(self, opt_result):
-        # self.opt_options = opt_options
         opt_success = self.set_optimisation_result(opt_result)
         if opt_success:
             self.set_state(DevState.ON)
