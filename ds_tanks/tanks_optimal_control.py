@@ -125,6 +125,8 @@ class TanksOptimalControl(Device):
         self.set_status("Model not loaded.")
         self.model_path = get_model_path(model_file=self.ModelFile)
         self.info_stream("Project path: %s" % self.model_path)
+        # TODO: rework state machine model (ON for simulation,
+        # RUNNING for optimisation, OFF for anything else?)
 
     def delete_device(self):
         self.process_pool.join()
@@ -185,7 +187,6 @@ class TanksOptimalControl(Device):
                                   "simulation with optimal control")
     @DebugIt()
     def RunSimulation(self, switch):
-        # TODO: simulation should be run in a separate process/thread
         if switch == 0:
             checks = self.check_equilibrium(self.control_value or 0.0)
             if False in checks:
@@ -196,27 +197,29 @@ class TanksOptimalControl(Device):
                 self.warn_stream("At least one of levels is not from"
                                  "equilibrium, setting control to %f" %
                                  self.control_value)
-            self.sim_result = simulate_tanks(self.model_path,
-                                             u=self.control_value,
-                                             t_final=self.SimulationFinalTime,
-                                             tank1_outflow=self.Tank1Outflow,
-                                             tank2_outflow=self.Tank2Outflow,
-                                             tank3_outflow=self.Tank3Outflow)
-            self.extract_simulation_levels()
+            keyword_args = {'u': self.control_value,
+                            't_final': self.SimulationFinalTime,
+                            'tank1_outflow': self.Tank1Outflow,
+                            'tank2_outflow': self.Tank2Outflow,
+                            'tank3_outflow': self.Tank3Outflow}
+            res = self.process_pool.apply_async(simulate_tanks,
+                                                (self.model_path,),
+                                                keyword_args,
+                                                callback=self.simulation_ended)
         elif self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"
             self.warn_stream(msg)
             raise Exception(msg)
         else:
-            self.sim_result = simulate_tanks(self.model_path,
-                                             u=self.optimal_control,
-                                             t_final=self.t_opt,
-                                             tank1_outflow=self.Tank1Outflow,
-                                             tank2_outflow=self.Tank2Outflow,
-                                             tank3_outflow=self.Tank3Outflow)
-            self.extract_simulation_levels()
-        self.set_state(DevState.ON)
-        self.set_status("Simulation completed.")
+            keyword_args = {'u': self.optimal_control,
+                            't_final': self.t_opt,
+                            'tank1_outflow': self.Tank1Outflow,
+                            'tank2_outflow': self.Tank2Outflow,
+                            'tank3_outflow': self.Tank3Outflow}
+            res = self.process_pool.apply_async(simulate_tanks,
+                                                (self.model_path,),
+                                                keyword_args,
+                                                callback=self.simulation_ended)
 
     @command
     @DebugIt()
@@ -323,11 +326,13 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
-    def extract_simulation_levels(self):
-        self.h1_sim = self.sim_result['h1']
-        self.h2_sim = self.sim_result['h2']
-        self.h3_sim = self.sim_result['h3']
-        self.t_sim = self.sim_result["time"]
+    def simulation_ended(self, sim_result):
+        self.h1_sim = sim_result['h1']
+        self.h2_sim = sim_result['h2']
+        self.h3_sim = sim_result['h3']
+        self.t_sim = sim_result["time"]
+        self.set_state(DevState.ON)
+        self.set_status("Simulation complete.")
 
     def set_outflow_values(self):
         self.init_model.set("C1", float(self.Tank1Outflow))

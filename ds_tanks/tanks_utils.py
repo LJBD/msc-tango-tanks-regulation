@@ -12,7 +12,7 @@ U_MAX = 100.0
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
                    tank1_outflow=26, tank2_outflow=26, tank3_outflow=28,
-                   with_plots=False):
+                   with_full_traj_obj=False, with_plots=False):
     """
     Simulate tanks model.
     :param model_path: path to a file containing the model
@@ -56,7 +56,13 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
         # Plot the initial guess trajectories
         plot_results(h1_init_sim, h2_init_sim, h3_init_sim, t_init_sim,
                      u_init_sim, title='Initial guess obtained by simulation')
-    return init_res
+    if with_full_traj_obj:
+        return init_res
+    else:
+        return_dict = {'h1': init_res['h1'], 'h2': init_res['h2'], 'h3':
+                       init_res['h3'], 'u': init_res['u'], 'time':
+                       init_res['time']}
+        return return_dict
 
 
 def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
