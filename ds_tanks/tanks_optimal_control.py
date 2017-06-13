@@ -276,6 +276,7 @@ class TanksOptimalControl(Device):
         if self.SendControlMode == "SwitchTimes":
             if not self.switch_times:
                 self.NormaliseOptimalControl()
+        data_for_sending = self.get_data_for_ext_control()
     # TODO: add communication with Matlab via TCP handled in a process/thread
 
     # -----------------
@@ -387,6 +388,14 @@ class TanksOptimalControl(Device):
                 switch_times.append(i)
         time_step = self.t_opt / len(self.optimal_control)
         self.switch_times = [index * time_step for index in switch_times]
+
+    def get_data_for_ext_control(self):
+        data = [self.h1_final, self.h2_final, self.h3_final, self.t_opt,
+                self.optimal_control[0], 0, self.switch_times[0],
+                self.switch_times[1]]
+        if self.optimal_control[0] == 0:
+            data[5] = self.MaxControl
+        return data
 
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
