@@ -33,11 +33,25 @@ def main(with_commands=True):
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
         time_sim = opt_dev.read_attribute("SimulationTime").value
+        print(get_matlab_data(opt_dev))
         plot_with_optimal_trajectories(time_opt, time_sim, h1_sim, h2_sim,
                                        h3_sim, opt_h1, opt_h2, opt_h3,
                                        opt_control)
     else:
         print("Wrong state, exiting!")
+
+
+def get_matlab_data(device):
+    switch_times = device.read_attribute('SwitchTimes').value
+    data = [device.read_attribute('H1Final').value,
+            device.read_attribute('H2Final').value,
+            device.read_attribute('H3Final').value,
+            device.read_attribute('T_opt').value,
+            device.read_attribute('OptimalControl').value[0],
+            0,
+            switch_times[0],
+            switch_times[1]]
+    return data
 
 
 if __name__ == '__main__':
