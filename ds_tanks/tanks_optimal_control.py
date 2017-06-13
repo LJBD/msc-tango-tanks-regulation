@@ -116,9 +116,9 @@ class TanksOptimalControl(Device):
                             doc="Times of switching between min and max"
                                 "control.")
 
-    # --------
-    # Commands
-    # --------
+    # ---------------
+    # Derived methods
+    # ---------------
     def init_device(self):
         super(TanksOptimalControl, self).init_device()
         self.set_state(DevState.OFF)
@@ -132,6 +132,9 @@ class TanksOptimalControl(Device):
         self.process_pool.join()
         super(TanksOptimalControl, self).delete_device()
 
+    # --------
+    # Commands
+    # --------
     @command
     @DebugIt()
     def LoadInitialModel(self):
@@ -183,32 +186,33 @@ class TanksOptimalControl(Device):
          self.h2_final,
          self.h3_final] = self.init_model.get(['h1', 'h2', 'h3'])
 
-    @command(dtype_in=int, doc_in="0 for normal simulation and 1 for"
-                                  "simulation with optimal control")
+    @command
     @DebugIt()
-    def RunSimulation(self, switch):
+    def RunSimulation(self):
         self.set_state(DevState.ON)
         self.set_status("Launching simulation...")
-        if switch == 0:
-            checks = self.check_equilibrium(self.control_value or 0.0)
-            if False in checks:
-                ctrl_h1 = self.Tank1Outflow * sqrt(self.h1_final)
-                ctrl_h2 = self.Tank2Outflow * sqrt(self.h2_final)
-                ctrl_h3 = self.Tank3Outflow * sqrt(self.h3_final)
-                self.control_value = (ctrl_h1 + ctrl_h2 + ctrl_h3) / 3.0
-                self.warn_stream("At least one of levels is not from"
-                                 "equilibrium, setting control to %f" %
-                                 self.control_value)
-            keyword_args = {'u': self.control_value,
-                            't_final': self.SimulationFinalTime,
-                            'tank1_outflow': self.Tank1Outflow,
-                            'tank2_outflow': self.Tank2Outflow,
-                            'tank3_outflow': self.Tank3Outflow}
-            res = self.process_pool.apply_async(simulate_tanks,
-                                                (self.model_path,),
-                                                keyword_args,
-                                                callback=self.simulation_ended)
-        elif self.t_opt == -1:
+        checks = self.check_equilibrium(self.control_value or 0.0)
+        if False in checks:
+            ctrl_h1 = self.Tank1Outflow * sqrt(self.h1_final)
+            ctrl_h2 = self.Tank2Outflow * sqrt(self.h2_final)
+            ctrl_h3 = self.Tank3Outflow * sqrt(self.h3_final)
+            self.control_value = (ctrl_h1 + ctrl_h2 + ctrl_h3) / 3.0
+            self.warn_stream("At least one of levels is not from"
+                             "equilibrium, setting control to %f" %
+                             self.control_value)
+        keyword_args = {'u': self.control_value,
+                        't_final': self.SimulationFinalTime,
+                        'tank1_outflow': self.Tank1Outflow,
+                        'tank2_outflow': self.Tank2Outflow,
+                        'tank3_outflow': self.Tank3Outflow}
+        res = self.process_pool.apply_async(simulate_tanks,
+                                            (self.model_path,), keyword_args,
+                                            callback=self.simulation_ended)
+
+    @command
+    @DebugIt()
+    def RunVerification(self):
+        if self.t_opt == -1:
             msg = "Optimisation not yet performed, can't simulate results!"
             self.warn_stream(msg)
             raise Exception(msg)

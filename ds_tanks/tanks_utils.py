@@ -67,7 +67,7 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
 
 def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
                      h1_final, h2_final, h3_final, max_control, sim_control,
-                     ipopt_tolerance=1e-3, t_start=0, t_final=50.0,):
+                     ipopt_tolerance=1e-3, t_start=0, t_final=50.0):
     # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
     init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)

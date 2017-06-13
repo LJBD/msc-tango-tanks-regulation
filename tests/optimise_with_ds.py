@@ -11,10 +11,10 @@ def main(with_commands=True):
     opt_dev = DeviceProxy("opt/ctrl/1")
     if with_commands:
         print("Getting initial values...")
-        opt_dev.command_inout_asynch("GetEquilibriumFromControl", 73.5)
+        opt_dev.command_inout_asynch("GetEquilibriumFromControl", 88.5)
         sleep(5)
         print("Running simulation...")
-        opt_dev.command_inout_asynch("RunSimulation", 0)
+        opt_dev.command_inout_asynch("RunSimulation")
         sleep(5)
         print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
@@ -28,7 +28,7 @@ def main(with_commands=True):
         opt_h3 = opt_dev.read_attribute("OptimalH3").value
         # plot_results(opt_h1, opt_h2, opt_h3, time, opt_control,
         #              "Optimised with TanksOptimalControl")
-        # opt_dev.command_inout_asynch("RunSimulation", 1)
+        # opt_dev.command_inout_asynch("RunVerification")
         h1_sim = opt_dev.read_attribute("H1Simulated").value
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
