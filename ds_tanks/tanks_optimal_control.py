@@ -73,48 +73,87 @@ class TanksOptimalControl(Device):
     # ----------
     # Attributes
     # ----------
-    H1Simulated = attribute(dtype=(float,), max_dim_x=10000,
-                            fget="read_h1_simulated",
-                            doc="Level of 1st tank (simulated)")
-    H2Simulated = attribute(dtype=(float,), max_dim_x=10000,
-                            fget="read_h2_simulated",
-                            doc="Level of 2nd tank (simulated)")
-    H3Simulated = attribute(dtype=(float,), max_dim_x=10000,
-                            fget="read_h3_simulated",
-                            doc="Level of 3rd tank (simulated)")
-    SimulationTime = attribute(dtype=(float,), max_dim_x=10000,
-                               fget="read_simulation_time",
-                               doc="Time of simulation (for plotting)")
-    T_opt = attribute(dtype=float, label="Optimal time", fget="read_t_opt",
-                      doc="Optimal time from optimisation")
-    H1Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-                        label="H1 Final", fget="read_h1_final",
-                        fset="write_h1_final", min_value=0.0, max_value=40.0,
-                        doc="Final value of level in 1st tank")
-    H2Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-                        label="H2 Final", fget="read_h2_final",
-                        fset="write_h2_final", min_value=0.0, max_value=40.0,
-                        doc="Final value of level in 2nd tank")
-    H3Final = attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-                        label="H3 Final", fget="read_h3_final",
-                        fset="write_h3_final", min_value=0.0, max_value=40.0,
-                        doc="Final value of level in 3rd tank")
-    OptimalControl = attribute(dtype=(float,), max_dim_x=10000,
-                               fget="read_optimal_control",
-                               doc="Optimal control from solver")
-    OptimalH1 = attribute(dtype=(float,), max_dim_x=10000,
-                          fget="read_optimal_h1",
-                          doc="Optimal trajectory of level in 1st tank")
-    OptimalH2 = attribute(dtype=(float,), max_dim_x=10000,
-                          fget="read_optimal_h2",
-                          doc="Optimal trajectory of level in 2nd tank")
-    OptimalH3 = attribute(dtype=(float,), max_dim_x=10000,
-                          fget="read_optimal_h3",
-                          doc="Optimal trajectory of level in 3nd tank")
-    SwitchTimes = attribute(dtype=(float,), max_dim_x=20,
-                            fget="read_switch_times",
-                            doc="Times of switching between min and max"
-                                "control.")
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Level of 1st tank (simulated)")
+    def H1Simulated(self):
+        return self.h1_sim
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Level of 2nd tank (simulated)")
+    def H2Simulated(self):
+        return self.h2_sim
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Level of 3rd tank (simulated)")
+    def H3Simulated(self):
+        return self.h3_sim
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Time of simulation (for plotting)")
+    def SimulationTime(self):
+        return self.t_sim
+
+    @attribute(dtype=float, label="Optimal time",
+               doc="Optimal time from optimisation")
+    def OptimalTime(self):
+        return self.t_opt
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, label="H1 Final",
+               min_value=0.0, max_value=40.0,
+               doc="Final value of level in 1st tank")
+    def H1Final(self):
+        return self.h1_final
+
+    @H1Final.write
+    def write_h1_final(self, value):
+        self.h1_final = value
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
+               label="H2 Final", min_value=0.0, max_value=40.0,
+               doc="Final value of level in 2nd tank")
+    def H2Final(self):
+        return self.h2_final
+
+    @H2Final.write
+    def write_h2_final(self, value):
+        self.h2_final = value
+
+    @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
+               label="H3 Final", min_value=0.0, max_value=40.0,
+               doc="Final value of level in 3rd tank")
+    def H3Final(self):
+        return self.h3_final
+
+    @H3Final.write
+    def write_h3_final(self, value):
+        self.h3_final = value
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Optimal control from solver")
+    def OptimalControl(self):
+        return self.optimal_control
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Optimal trajectory of level in 1st tank")
+    def OptimalH1(self):
+        return self.optimal_h1
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Optimal trajectory of level in 2nd tank")
+    def OptimalH2(self):
+        return self.optimal_h2
+
+    @attribute(dtype=(float,), max_dim_x=10000,
+               doc="Optimal trajectory of level in 3nd tank")
+    def OptimalH3(self):
+        return self.optimal_h3
+
+    @attribute(dtype=(float,), max_dim_x=20,
+               doc="Times of switching between min and max control.")
+    def SwitchTimes(self):
+        return self.switch_times
+
+    # TODO: add defining initial values for simulation/optimisation
 
     # ---------------
     # Derived methods
@@ -279,59 +318,6 @@ class TanksOptimalControl(Device):
                 self.NormaliseOptimalControl()
         data_for_sending = self.get_data_for_ext_control()
     # TODO: add communication with Matlab via TCP handled in a process/thread
-
-    # TODO: add defining initial values for simulation/optimisation
-
-    # -----------------
-    # Attribute methods
-    # -----------------
-    def read_h1_simulated(self):
-        return self.h1_sim
-
-    def read_h2_simulated(self):
-        return self.h2_sim
-
-    def read_h3_simulated(self):
-        return self.h3_sim
-    
-    def read_simulation_time(self):
-        return self.t_sim
-
-    def read_t_opt(self):
-        return self.t_opt
-
-    def read_h1_final(self):
-        return self.h1_final
-
-    def write_h1_final(self, value):
-        self.h1_final = value
-
-    def read_h2_final(self):
-        return self.h2_final
-
-    def write_h2_final(self, value):
-        self.h2_final = value
-
-    def read_h3_final(self):
-        return self.h3_final
-
-    def write_h3_final(self, value):
-        self.h3_final = value
-
-    def read_optimal_control(self):
-        return self.optimal_control
-
-    def read_optimal_h1(self):
-        return self.optimal_h1
-
-    def read_optimal_h2(self):
-        return self.optimal_h2
-
-    def read_optimal_h3(self):
-        return self.optimal_h3
-
-    def read_switch_times(self):
-        return self.switch_times
 
     # -------------
     # Other methods

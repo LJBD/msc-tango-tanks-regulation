@@ -21,7 +21,7 @@ def main(with_commands=True):
         sleep(5)
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
-        opt_time = opt_dev.read_attribute("T_opt").value
+        opt_time = opt_dev.read_attribute("OptimalTime").value
         time_opt = linspace(0.0, opt_time, len(opt_control))
         opt_h1 = opt_dev.read_attribute("OptimalH1").value
         opt_h2 = opt_dev.read_attribute("OptimalH2").value
@@ -46,7 +46,7 @@ def get_matlab_data(device):
     data = [device.read_attribute('H1Final').value,
             device.read_attribute('H2Final').value,
             device.read_attribute('H3Final').value,
-            device.read_attribute('T_opt').value,
+            device.read_attribute('OptimalTime').value,
             device.read_attribute('OptimalControl').value[0],
             0,
             switch_times[0],
