@@ -125,8 +125,6 @@ class TanksOptimalControl(Device):
         self.set_status("Model not loaded.")
         self.model_path = get_model_path(model_file=self.ModelFile)
         self.info_stream("Project path: %s" % self.model_path)
-        # TODO: rework state machine model (ON for simulation,
-        # RUNNING for optimisation, OFF for anything else?)
 
     def delete_device(self):
         self.process_pool.join()
@@ -193,10 +191,8 @@ class TanksOptimalControl(Device):
         self.set_status("Launching simulation...")
         checks = self.check_equilibrium(self.control_value or 0.0)
         if False in checks:
-            ctrl_h1 = self.Tank1Outflow * sqrt(self.h1_final)
-            ctrl_h2 = self.Tank2Outflow * sqrt(self.h2_final)
-            ctrl_h3 = self.Tank3Outflow * sqrt(self.h3_final)
-            self.control_value = (ctrl_h1 + ctrl_h2 + ctrl_h3) / 3.0
+            controls = self.get_equilibrium_controls()
+            self.control_value = sum(controls) / 3.0
             self.warn_stream("At least one of levels is not from"
                              "equilibrium, setting control to %f" %
                              self.control_value)
@@ -217,6 +213,8 @@ class TanksOptimalControl(Device):
             self.warn_stream(msg)
             raise Exception(msg)
         else:
+            self.set_state(DevState.ON)
+            self.set_status("Launching verification...")
             keyword_args = {'u': self.optimal_control,
                             't_final': self.t_opt,
                             'tank1_outflow': self.Tank1Outflow,
@@ -232,6 +230,9 @@ class TanksOptimalControl(Device):
     def Optimise(self):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
+        if not self.control_value:
+            controls = self.get_equilibrium_controls()
+            self.control_value = sum(controls) / 3.0
         res = self.process_pool.apply_async(run_optimisation,
                                             (self.model_path,
                                              self.Tank1Outflow,
@@ -278,6 +279,8 @@ class TanksOptimalControl(Device):
                 self.NormaliseOptimalControl()
         data_for_sending = self.get_data_for_ext_control()
     # TODO: add communication with Matlab via TCP handled in a process/thread
+
+    # TODO: add defining initial values for simulation/optimisation
 
     # -----------------
     # Attribute methods
@@ -333,6 +336,18 @@ class TanksOptimalControl(Device):
     # -------------
     # Other methods
     # -------------
+    def get_equilibrium_control_for_level(self, i):
+        outflow = getattr(self, "Tank%dOutflow" % i)
+        final_level = getattr(self, "h%d_final" % i)
+        control = outflow * sqrt(final_level)
+        return control
+
+    @DebugIt(show_ret=True)
+    def get_equilibrium_controls(self):
+        return [self.get_equilibrium_control_for_level(1),
+                self.get_equilibrium_control_for_level(2),
+                self.get_equilibrium_control_for_level(3)]
+
     def simulation_ended(self, sim_result):
         self.h1_sim = sim_result['h1']
         self.h2_sim = sim_result['h2']
@@ -370,13 +385,13 @@ class TanksOptimalControl(Device):
 
     @DebugIt(show_args=True, show_ret=True)
     def check_equilibrium(self, control):
-        h1_check = self.h1_final - self.get_equilibrium(1, control) < 1e-5
-        h2_check = self.h2_final - self.get_equilibrium(2, control) < 1e-5
-        h3_check = self.h3_final - self.get_equilibrium(3, control) < 1e-5
+        h1_check = self.h1_final - self.get_equilibrium_level(1, control) < 1e-5
+        h2_check = self.h2_final - self.get_equilibrium_level(2, control) < 1e-5
+        h3_check = self.h3_final - self.get_equilibrium_level(3, control) < 1e-5
         return [h1_check, h2_check, h3_check]
 
     @DebugIt(show_args=True, show_ret=True)
-    def get_equilibrium(self, switch, control):
+    def get_equilibrium_level(self, switch, control):
         outflow = getattr(self, "Tank%dOutflow" % switch)
         eq = control ** 2 / outflow ** 2
         return eq
