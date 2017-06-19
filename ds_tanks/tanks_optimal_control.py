@@ -25,6 +25,9 @@ class TanksOptimalControl(Device):
     h2_sim = [0.0]
     h3_sim = [0.0]
     t_sim = [0.0]
+    h1_initial = 20.0
+    h2_initial = 20.0
+    h3_initial = 20.0
     h1_final = 0.0
     h2_final = 0.0
     h3_final = 0.0
@@ -94,42 +97,66 @@ class TanksOptimalControl(Device):
         return self.t_sim
 
     @attribute(dtype=float, label="Optimal time",
-               doc="Optimal time from optimisation")
+               doc="Optimal time obtained from optimisation")
     def OptimalTime(self):
         return self.t_opt
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE, label="H1 Final",
-               min_value=0.0, max_value=40.0,
+    @attribute(dtype=float, label="H1 Initial", min_value=0.0, max_value=40.0,
+               doc="Initial value of level in 1st tank")
+    def H1Initial(self):
+        return self.h1_initial
+
+    @H1Initial.write
+    def H1Initial(self, value):
+        self.h1_initial = value
+
+    @attribute(dtype=float, label="H2 Initial", min_value=0.0, max_value=40.0,
+               doc="Initial value of level in 2nd tank")
+    def H2Initial(self):
+        return self.h2_initial
+
+    @H2Initial.write
+    def H2Initial(self, value):
+        self.h2_initial = value
+
+    @attribute(dtype=float, label="H3 Initial", min_value=0.0, max_value=40.0,
+               doc="Initial value of level in 3rd tank")
+    def H3Initial(self):
+        return self.h3_initial
+
+    @H3Initial.write
+    def H3Initial(self, value):
+        self.h3_initial = value
+
+    @attribute(dtype=float, label="H1 Final", min_value=0.0, max_value=40.0,
                doc="Final value of level in 1st tank")
     def H1Final(self):
         return self.h1_final
 
     @H1Final.write
-    def write_h1_final(self, value):
+    def H1Final(self, value):
         self.h1_final = value
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-               label="H2 Final", min_value=0.0, max_value=40.0,
+    @attribute(dtype=float, label="H2 Final", min_value=0.0, max_value=40.0,
                doc="Final value of level in 2nd tank")
     def H2Final(self):
         return self.h2_final
 
     @H2Final.write
-    def write_h2_final(self, value):
+    def H2Final(self, value):
         self.h2_final = value
 
-    @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-               label="H3 Final", min_value=0.0, max_value=40.0,
+    @attribute(dtype=float, label="H3 Final", min_value=0.0, max_value=40.0,
                doc="Final value of level in 3rd tank")
     def H3Final(self):
         return self.h3_final
 
     @H3Final.write
-    def write_h3_final(self, value):
+    def H3Final(self, value):
         self.h3_final = value
 
     @attribute(dtype=(float,), max_dim_x=10000,
-               doc="Optimal control from solver")
+               doc="Optimal control obtained from solver")
     def OptimalControl(self):
         return self.optimal_control
 
@@ -152,8 +179,6 @@ class TanksOptimalControl(Device):
                doc="Times of switching between min and max control.")
     def SwitchTimes(self):
         return self.switch_times
-
-    # TODO: add defining initial values for simulation/optimisation
 
     # ---------------
     # Derived methods
@@ -230,13 +255,15 @@ class TanksOptimalControl(Device):
         self.set_status("Launching simulation...")
         checks = self.check_equilibrium(self.control_value or 0.0)
         if False in checks:
-            controls = self.get_equilibrium_controls()
-            self.control_value = sum(controls) / 3.0
+            self.control_value = self.get_equilibrium_control()
             self.warn_stream("At least one of levels is not from"
                              "equilibrium, setting control to %f" %
                              self.control_value)
         keyword_args = {'u': self.control_value,
                         't_final': self.SimulationFinalTime,
+                        'h10': self.h1_initial,
+                        'h20': self.h2_initial,
+                        'h30': self.h3_initial,
                         'tank1_outflow': self.Tank1Outflow,
                         'tank2_outflow': self.Tank2Outflow,
                         'tank3_outflow': self.Tank3Outflow}
@@ -256,6 +283,9 @@ class TanksOptimalControl(Device):
             self.set_status("Launching verification...")
             keyword_args = {'u': self.optimal_control,
                             't_final': self.t_opt,
+                            'h10': self.h1_initial,
+                            'h20': self.h2_initial,
+                            'h30': self.h3_initial,
                             'tank1_outflow': self.Tank1Outflow,
                             'tank2_outflow': self.Tank2Outflow,
                             'tank3_outflow': self.Tank3Outflow}
@@ -270,8 +300,7 @@ class TanksOptimalControl(Device):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
         if not self.control_value:
-            controls = self.get_equilibrium_controls()
-            self.control_value = sum(controls) / 3.0
+            self.control_value = self.get_equilibrium_control()
         res = self.process_pool.apply_async(run_optimisation,
                                             (self.model_path,
                                              self.Tank1Outflow,
@@ -282,6 +311,9 @@ class TanksOptimalControl(Device):
                                              self.h3_final,
                                              self.MaxControl,
                                              self.control_value,
+                                             self.h1_initial,
+                                             self.h2_initial,
+                                             self.h3_initial,
                                              self.IPOPTTolerance,
                                              0.0,
                                              self.SimulationFinalTime),
@@ -329,10 +361,11 @@ class TanksOptimalControl(Device):
         return control
 
     @DebugIt(show_ret=True)
-    def get_equilibrium_controls(self):
-        return [self.get_equilibrium_control_for_level(1),
-                self.get_equilibrium_control_for_level(2),
-                self.get_equilibrium_control_for_level(3)]
+    def get_equilibrium_control(self):
+        controls = [self.get_equilibrium_control_for_level(1),
+                    self.get_equilibrium_control_for_level(2),
+                    self.get_equilibrium_control_for_level(3)]
+        return sum(controls) / 3.0
 
     def simulation_ended(self, sim_result):
         self.h1_sim = sim_result['h1']

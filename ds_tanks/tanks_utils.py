@@ -11,41 +11,48 @@ U_MAX = 100.0
 
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
-                   tank1_outflow=26, tank2_outflow=26, tank3_outflow=28,
+                   h10=20.0, h20=20.0, h30=20.0, tank1_outflow=26.0,
+                   tank2_outflow=26.0, tank3_outflow=28.0,
                    with_full_traj_obj=False, with_plots=False):
     """
-    Simulate tanks model.
+    Run simulation of the tanks model.
+
     :param model_path: path to a file containing the model
     :param u: either a constant value or a vector of input
     :param t_start: starting time for the simulation
     :param t_final: final time for the simulation
+    :param h10: initial condition of the level in 1st tank
+    :param h20: initial condition of the level in 2nd tank
+    :param h30: initial condition of the level in 3rd tank
     :param tank1_outflow: outflow coefficient of the 1st tanks
     :param tank2_outflow: outflow coefficient of the 2nd tanks
     :param tank3_outflow: outflow coefficient of the 3rd tanks
-    :param with_plots: should the plots be displayed
-    :return: None
+    :param with_full_traj_obj: boolean specifying if the full trajectory should
+    be returned
+    :param with_plots: boolean specifying if the plots should be displayed
+    :return: either a full trajectory object or a dictionary of trajectories
     """
     # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
-    init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
+    simulation_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
     # Load the model
-    init_sim_model = load_fmu(init_sim_fmu)
-    init_sim_model.set("C1", float(tank1_outflow))
-    init_sim_model.set("C2", float(tank2_outflow))
-    init_sim_model.set("C3", float(tank3_outflow))
+    simulation_model = load_fmu(simulation_fmu)
+    set_model_parameters(simulation_model,
+                         {"h10": h10, "h20": h20, "h30": h30,
+                          "C1": tank1_outflow, "C2": tank2_outflow,
+                          "C3": tank3_outflow})
+
     if hasattr(u, "__len__"):
         t = numpy.linspace(0.0, t_final, len(u))
         u_traj = numpy.transpose(numpy.vstack((t, u)))
         print("CONTROL TRAJECTORY TO BE USED:\n", u_traj)
-        init_res = init_sim_model.simulate(start_time=t_start,
-                                           final_time=t_final,
-                                           input=('u', u_traj))
+        init_res = simulation_model.simulate(start_time=t_start,
+                                             final_time=t_final,
+                                             input=('u', u_traj))
     else:
-        # Set initial and reference values
-        init_sim_model.set('u', u)
-        # Simulate with constant input Tc
-        init_res = init_sim_model.simulate(start_time=t_start,
-                                           final_time=t_final)
+        simulation_model.set('u', u)
+        init_res = simulation_model.simulate(start_time=t_start,
+                                             final_time=t_final)
     # Extract variable profiles
     t_init_sim = init_res['time']
     h1_init_sim = init_res['h1']
@@ -67,28 +74,49 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
 
 def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
                      h1_final, h2_final, h3_final, max_control, sim_control,
-                     ipopt_tolerance=1e-3, t_start=0, t_final=50.0):
+                     h10=20.0, h20=20.0, h30=20.0, ipopt_tolerance=1e-3,
+                     t_start=0, t_final=50.0):
+    """
+    Run optimisation of the tanks model.
+
+    :param model_path: path to the Modelica/Optimica model
+    :param tank1_outflow: outflow coefficient of the 1st tanks
+    :param tank2_outflow: outflow coefficient of the 2nd tanks
+    :param tank3_outflow: outflow coefficient of the 3rd tanks
+    :param h1_final: wanted final value of the level in 1st tank
+    :param h2_final: wanted final value of the level in 2nd tank
+    :param h3_final: wanted final value of the level in 3rd tank
+    :param max_control: higher bound of the control
+    :param sim_control: control to be used in initialisation simulation
+    :param h10: initial condition of the level in 1st tank
+    :param h20: initial condition of the level in 2nd tank
+    :param h30: initial condition of the level in 3rd tank
+    :param ipopt_tolerance: tolerance of the IPOPT solver
+    :param t_start: starting time of the initial simulation
+    :param t_final: final time of the initial simulation
+    :return: a dictionary with optimisation results
+    """
     # 2. Compute initial guess trajectories by means of simulation
     # Compile the optimization initialization model
     init_sim_fmu = compile_fmu("TanksPkg.ThreeTanks", model_path)
     # Load the model
-    init_sim_model = load_fmu(init_sim_fmu)
-    init_sim_model.set('u', sim_control)
-    init_result = init_sim_model.simulate(start_time=t_start,
-                                          final_time=t_final)
+    simulation_model = load_fmu(init_sim_fmu)
+    set_model_parameters(simulation_model,
+                         {'u': sim_control, "h10": h10, "h20": h20, "h30": h30,
+                          "C1": tank1_outflow, "C2": tank2_outflow,
+                          "C3": tank3_outflow})
+    init_result = simulation_model.simulate(start_time=t_start,
+                                            final_time=t_final)
     # 3. Solve the optimal control problem
     # Compile and load optimization problem
     optimisation_model = "TanksPkg.three_tanks_time_optimal"
     op = transfer_optimization_problem(optimisation_model, model_path)
-    # Set outflow values from properties
-    op.set("C1", float(tank1_outflow))
-    op.set("C2", float(tank2_outflow))
-    op.set("C3", float(tank3_outflow))
-    # Set initial values
-    op.set('h1_final', float(h1_final))
-    op.set('h2_final', float(h2_final))
-    op.set('h3_final', float(h3_final))
-    op.set('u_max', max_control)
+    # Set parameters
+    set_model_parameters(op, {"h10": h10, "h20": h20, "h30": h30,
+                              'h1_final': h1_final, 'h2_final': h2_final,
+                              'h3_final': h3_final, "C1": tank1_outflow,
+                              "C2": tank2_outflow, "C3": tank3_outflow,
+                              'u_max': max_control})
 
     # Set options
     opt_options = op.optimize_options()
@@ -102,6 +130,11 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     opt_result = {"h1": res['h1'], "h2": res['h2'], "h3": res['h3'],
                   "u": res['u'], "time": res['time']}
     return opt_result
+
+
+def set_model_parameters(model, parameters):
+    for key, value in parameters.items():
+        model.set(key, float(value))
 
 
 def get_initialisation_values(model_path, control_value):
