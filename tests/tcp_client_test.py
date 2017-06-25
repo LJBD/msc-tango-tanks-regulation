@@ -12,4 +12,9 @@ if __name__ == '__main__':
     sleep(0.1)
     data = sock.recv(1024)
     print("Received %d signs: %s" % (len(data), data))
+    try:
+        struct.unpack(">" + 'd'*8, data)
+        print("Unpacked:", data)
+    except struct.error:
+        pass
     sock.close()

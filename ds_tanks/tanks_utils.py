@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 
+import logging
 import numpy
 import sys
 from matplotlib import pyplot
@@ -227,3 +228,24 @@ def signal_handler(signal, frame, connection=None, pool=None):
         print(">>>Closing processes pool...")
         pool.join()
     sys.exit(0)
+
+
+def setup_logging(log_file_name, formatter):
+    print("Setting up logging...")
+    logger = logging.getLogger(__name__)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    if log_file_name:
+        file_handler = setup_logging_to_file(formatter, log_file_name)
+        logger.addHandler(file_handler)
+    print("Set up: %s" % repr(logger))
+    logger.debug("Logging set up.")
+    return logger
+
+
+def setup_logging_to_file(formatter, log_file_name):
+    print("Setting up logging to %s..." % log_file_name)
+    file_handler = logging.FileHandler(log_file_name)
+    file_handler.setFormatter(formatter)
+    return file_handler

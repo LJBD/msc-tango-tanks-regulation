@@ -1,6 +1,6 @@
 from multiprocessing import Pool
 
-from PyTango import DevState, DebugIt, AttrWriteType
+from PyTango import DevState, DebugIt
 from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from math import sqrt

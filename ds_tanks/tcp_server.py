@@ -7,7 +7,8 @@ from datetime import datetime
 from functools import partial
 from multiprocessing import Process, Pipe
 
-from ds_tanks.tanks_utils import signal_handler
+from ds_tanks.tanks_utils import signal_handler, setup_logging, \
+    setup_logging_to_file
 
 
 class TcpTanksServer(Process):
@@ -20,26 +21,16 @@ class TcpTanksServer(Process):
         self.address = address
         self.port = port
         self.pipe_connection = pipe_connection
-        if isinstance(logger, logging.Logger):
-            self.logger = logger
-        else:
-            self.setup_logging(log_file_name, log_level)
-
-    def setup_logging(self, log_file_name, log_level=logging.DEBUG):
-        print("Setting up logging...")
-        self.logger = logging.getLogger(__name__)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(log_level)
         formatter = logging.Formatter('%(asctime) - %(name)s - %(level)s:'
                                       '%(message)s')
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
-        if log_file_name:
-            file_handler = logging.FileHandler(log_file_name)
-            file_handler.setLevel(log_level)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
-        print("Set up: %s" % repr(self.logger))
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+            if log_file_name:
+                handler = setup_logging_to_file(formatter, log_file_name)
+                self.logger.addHandler(handler)
+        else:
+            self.logger = setup_logging(log_file_name, formatter)
+        self.logger.setLevel(log_level)
 
     def run(self):
         self.server_socket.bind((self.address, self.port))
