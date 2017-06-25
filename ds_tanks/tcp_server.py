@@ -12,13 +12,13 @@ from ds_tanks.tanks_utils import signal_handler, setup_logging, \
     setup_logging_to_file
 
 
-class TcpTanksServer(Process):
+class TCPTanksServer(Process):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def __init__(self, pipe_connection, address="0.0.0.0", port=4567,
                  logger=None, log_file_name=None, log_level=logging.DEBUG,
                  name=None):
-        super(TcpTanksServer, self).__init__(name=name)
+        super(TCPTanksServer, self).__init__(name=name)
         self.address = address
         self.port = port
         self.pipe_connection = pipe_connection
@@ -93,7 +93,7 @@ class TcpTanksServer(Process):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     first_connection, second_connection = Pipe()
-    tcp_server = TcpTanksServer(second_connection, name="TcpTanksServer",
+    tcp_server = TCPTanksServer(second_connection, name="TcpTanksServer",
                                 log_file_name="tcp_tanks_server.log",
                                 log_level=logging.INFO)
     sample_data = [30.0, 30.0, 22.0, 140.312246999846, 100.0, 0,

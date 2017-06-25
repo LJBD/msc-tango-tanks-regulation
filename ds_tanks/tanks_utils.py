@@ -219,14 +219,11 @@ def print_stationary_point(identifier, h1_0, h2_0, h3_0, u_0):
     print('h3 = %f' % h3_0)
 
 
-def signal_handler(signal, frame, connection=None, pool=None):
+def signal_handler(signal, frame, connection=None):
     print('>>> Received %s, closing...!' % signal)
     if connection:
         print(">>>Closing connection...")
         connection.close()
-    if pool:
-        print(">>>Closing processes pool...")
-        pool.join()
     sys.exit(0)
 
 
@@ -239,7 +236,6 @@ def setup_logging(log_file_name, formatter):
     if log_file_name:
         file_handler = setup_logging_to_file(formatter, log_file_name)
         logger.addHandler(file_handler)
-    print("Set up: %s" % repr(logger))
     logger.debug("Logging set up.")
     return logger
 
