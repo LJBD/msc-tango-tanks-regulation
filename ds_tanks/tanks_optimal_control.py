@@ -221,6 +221,8 @@ class TanksOptimalControl(Device):
         self.info_stream("Project path: %s" % self.model_path)
         if self.TCPServerEnabled:
             address, port = self.TCPServerAddress.split(':')
+            self.debug_stream("Setting up TCP server on %s:%d" % (address,
+                                                                  int(port)))
             self.tcp_server_process = TCPTanksServer(self.other_pipe_end,
                                                      address, int(port),
                                                      log_level=logging.INFO,
