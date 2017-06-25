@@ -1,13 +1,19 @@
-from multiprocessing import Pool
-
-from PyTango import DevState, DebugIt
-from PyTango.server import Device, device_property, attribute, command, \
-    DeviceMeta
+import logging
 from math import sqrt
+from multiprocessing import Pool, Pipe
+try:
+    from tango import DevState, DebugIt
+    from tango.server import Device, device_property, attribute, command, \
+        DeviceMeta
+except ImportError:
+    from PyTango import DevState, DebugIt
+    from PyTango.server import Device, device_property, attribute, command, \
+        DeviceMeta
 
-from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
+from pyfmi.fmi import load_fmu
 
+from ds_tanks.tcp_server import TCPTanksServer
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
     run_optimisation
 
@@ -31,6 +37,10 @@ class TanksOptimalControl(Device):
     h1_final = 0.0
     h2_final = 0.0
     h3_final = 0.0
+    h1_current = 0.0
+    h2_current = 0.0
+    h3_current = 0.0
+    control_current = 0.0
     init_model = None
     control_value = None
     sim_result = None
@@ -40,6 +50,8 @@ class TanksOptimalControl(Device):
     optimal_h3 = [0.0]
     switch_times = []
     process_pool = Pool()
+    my_pipe_end, other_pipe_end = Pipe()
+    tcp_server_process = None
 
     # ----------
     # Properties
@@ -58,16 +70,14 @@ class TanksOptimalControl(Device):
                                    doc="Outflow coefficient of the 3rd tank.")
     SimulationFinalTime = device_property(dtype=float, default_value=50.0,
                                           doc="Final time for a simulation")
-    ServerAddressPort = device_property(dtype=str,
-                                        default_value="localhost:4567",
-                                        doc="Address and port (separated by a"
-                                            "':') to which the TCP server"
-                                            "should be bound.")
-    DirectControlAddress = device_property(dtype=str,
-                                           doc="Address and port (separated by"
-                                               "a ':') of a remote direct"
-                                               "control application.",
-                                           default_value="localhost:8888")
+    TCPServerEnabled = device_property(dtype=bool, default_value=True,
+                                       doc="True if TCP server should be"
+                                           "enabled, False if not")
+    TCPServerAddress = device_property(dtype=str,
+                                       default_value="0.0.0.0:4567",
+                                       doc="Address and port (separated by a"
+                                           "':') to which the TCP server"
+                                           "should be bound.")
     SendControlMode = device_property(dtype=str, default_value='SwitchTimes',
                                       doc="Type of control to be sent to a"
                                           "direct control application. Either"
@@ -155,6 +165,26 @@ class TanksOptimalControl(Device):
     def H3Final(self, value):
         self.h3_final = value
 
+    @attribute(dtype=float, label="H1 Current",
+               doc="Current value of level in 1st tank from direct control")
+    def H1Current(self):
+        return self.h1_current
+
+    @attribute(dtype=float, label="H2 Current",
+               doc="Current value of level in 2nd tank from direct control")
+    def H2Current(self):
+        return self.h2_current
+
+    @attribute(dtype=float, label="H3 Current",
+               doc="Current value of level in 3rd tank from direct control")
+    def H3Current(self):
+        return self.h3_current
+
+    @attribute(dtype=float, label="Current Control",
+               doc="Current value of control from direct control")
+    def ControlCurrent(self):
+        return self.control_current
+
     @attribute(dtype=(float,), max_dim_x=10000,
                doc="Optimal control obtained from solver")
     def OptimalControl(self):
@@ -189,6 +219,13 @@ class TanksOptimalControl(Device):
         self.set_status("Model not loaded.")
         self.model_path = get_model_path(model_file=self.ModelFile)
         self.info_stream("Project path: %s" % self.model_path)
+        if self.TCPServerEnabled:
+            address, port = self.TCPServerAddress.split(':')
+            self.tcp_server_process = TCPTanksServer(self.other_pipe_end,
+                                                     address, int(port),
+                                                     log_level=logging.INFO,
+                                                     name="TCPServer")
+            self.tcp_server_process.start()
 
     def delete_device(self):
         self.process_pool.join()
@@ -349,7 +386,20 @@ class TanksOptimalControl(Device):
             if not self.switch_times:
                 self.NormaliseOptimalControl()
         data_for_sending = self.get_data_for_ext_control()
-    # TODO: add communication with Matlab via TCP handled in a process/thread
+        self.my_pipe_end.send(data_for_sending)
+
+    @command(polling_period=100)
+    def GetDataFromDirectControl(self):
+        if self.my_pipe_end.poll():
+            try:
+                while True:
+                    received_data = self.my_pipe_end.recv()
+                    self.h1_current = received_data[0]
+                    self.h2_current = received_data[1]
+                    self.h3_current = received_data[2]
+                    self.control_current = received_data[3]
+            except EOFError:
+                self.debug_stream("No more data from direct control.")
 
     # -------------
     # Other methods
