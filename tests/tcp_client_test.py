@@ -8,7 +8,7 @@ if __name__ == '__main__':
     server_address = '192.168.0.23'
     port = 4567
     sock.connect((server_address, port))
-    sock.send(struct.pack(">d", 123.456))
+    sock.send(struct.pack(">dddd", 30.0, 30.0, 22.0, 100.0))
     sleep(0.1)
     data = sock.recv(1024)
     print("Received %d signs: %s" % (len(data), data))

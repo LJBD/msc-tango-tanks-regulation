@@ -21,8 +21,8 @@ class TcpTanksServer(Process):
         self.address = address
         self.port = port
         self.pipe_connection = pipe_connection
-        formatter = logging.Formatter('%(asctime) - %(name)s - %(level)s:'
-                                      '%(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
+                                      ' %(message)s')
         if isinstance(logger, logging.Logger):
             self.logger = logger
             if log_file_name:
@@ -44,7 +44,7 @@ class TcpTanksServer(Process):
         connection, client_address = self.server_socket.accept()
         signal.signal(signal.SIGINT, partial(signal_handler,
                                              connection=connection))
-        self.logger.info('Connection from', client_address)
+        self.logger.info('Connection from %s:%d' % client_address)
         if self.pipe_connection.poll():
             self.send_data_to_client(connection)
         else:
@@ -58,11 +58,13 @@ class TcpTanksServer(Process):
                 try:
                     real_data = struct.unpack(">dddd", data)
                 except struct.error:
-                    real_data = (data,)
+                    real_data = data
                 self.logger.debug('received "%s", timestamp: %s' %
-                                  (real_data[0], datetime.now()))
+                                  (real_data, datetime.now()))
                 if self.pipe_connection.poll():
                     self.send_data_to_client(connection)
+                if not data:
+                    break
             except socket.error as e:
                 self.logger.error("Socket error:", e)
                 self.logger.info('No more data from %s:%d, overall packets'
