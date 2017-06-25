@@ -1,8 +1,6 @@
-from functools import partial
 from multiprocessing import Pool
 
-import signal
-from PyTango import DevState, DebugIt
+from PyTango import DevState, DebugIt, AttrWriteType
 from PyTango.server import Device, device_property, attribute, command, \
     DeviceMeta
 from math import sqrt
@@ -11,7 +9,7 @@ from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
 
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
-    run_optimisation, signal_handler
+    run_optimisation
 
 
 class TanksOptimalControl(Device):
@@ -185,11 +183,6 @@ class TanksOptimalControl(Device):
     # ---------------
     # Derived methods
     # ---------------
-    def __init__(self, *args, **kwargs):
-        signal.signal(signal.SIGINT, partial(signal_handler,
-                                             pool=self.process_pool))
-        super(TanksOptimalControl, self).__init__(*args, **kwargs)
-
     def init_device(self):
         super(TanksOptimalControl, self).init_device()
         self.set_state(DevState.OFF)
