@@ -34,14 +34,7 @@ class TcpTanksServer(Process):
         self.logger.setLevel(log_level)
 
     def run(self):
-        try:
-            self.server_socket.bind((self.address, self.port))
-        except socket.error as e:
-            if "Address already in use" in e.message:
-                self.logger.warning("Address already in use, going to sleep for"
-                                    "10 seconds!")
-                sleep(10)
-                self.server_socket.bind((self.address, self.port))
+        self.server_socket.bind((self.address, self.port))
         self.server_socket.listen(1)
         while True:
             self.server_loop()
@@ -69,6 +62,7 @@ class TcpTanksServer(Process):
                     real_data = data
                 self.logger.debug('received "%s", timestamp: %s' %
                                   (real_data, datetime.now()))
+                self.pipe_connection.send(real_data)
                 if self.pipe_connection.poll():
                     self.send_data_to_client(connection)
                 if not data:
@@ -95,12 +89,16 @@ class TcpTanksServer(Process):
             data_format = '>' + 'd' * len(data_from_ds)
             connection.sendall(struct.pack(data_format, *data_from_ds))
 
+
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     first_connection, second_connection = Pipe()
     tcp_server = TcpTanksServer(second_connection, name="TcpTanksServer",
-                                log_file_name="tcp_tanks_server.log")
+                                log_file_name="tcp_tanks_server.log",
+                                log_level=logging.INFO)
     sample_data = [30.0, 30.0, 22.0, 140.312246999846, 100.0, 0,
                    128.23238467535595, 132.87848556939056]
     tcp_server.start()
     first_connection.send(sample_data)
+    sleep(20)
+    print(first_connection.recv())
