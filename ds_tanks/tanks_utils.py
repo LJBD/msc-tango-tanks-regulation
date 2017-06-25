@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 
 import numpy
+import sys
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu
 from pymodelica import compile_fmu
@@ -215,3 +216,14 @@ def print_stationary_point(identifier, h1_0, h2_0, h3_0, u_0):
     print('h1 = %f' % h1_0)
     print('h2 = %f' % h2_0)
     print('h3 = %f' % h3_0)
+
+
+def signal_handler(signal, frame, connection=None, pool=None):
+    print('>>> Received %s, closing...!' % signal)
+    if connection:
+        print(">>>Closing connection...")
+        connection.close()
+    if pool:
+        print(">>>Closing processes pool...")
+        pool.join()
+    sys.exit(0)

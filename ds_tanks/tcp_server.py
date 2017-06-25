@@ -3,10 +3,11 @@ import logging
 import socket
 import signal
 import struct
-import sys
 from datetime import datetime
 from functools import partial
 from multiprocessing import Process, Pipe
+
+from ds_tanks.tanks_utils import signal_handler
 
 
 class TcpTanksServer(Process):
@@ -92,14 +93,6 @@ class TcpTanksServer(Process):
         else:
             data_format = '>' + 'd' * len(data_from_ds)
             connection.sendall(struct.pack(data_format, *data_from_ds))
-
-
-def signal_handler(signal, frame, connection=None):
-    print('>>> Received %s, closing...!' % signal)
-    if connection:
-        print(">>>Closing connection...")
-        connection.close()
-    sys.exit(0)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
