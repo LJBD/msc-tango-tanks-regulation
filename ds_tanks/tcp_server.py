@@ -1,21 +1,44 @@
 from __future__ import print_function
+import logging
 import socket
+import signal
 import struct
+import sys
 from datetime import datetime
-from multiprocessing import Process
-        
+from functools import partial
+from multiprocessing import Process, Pipe
+
 
 class TcpTanksServer(Process):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def __init__(self, pipe_connection, address="0.0.0.0", port=4567,
-                 group=None, target=None, name=None):
-        super(TcpTanksServer, self).__init__(group=group, target=target,
-                                             name=name)
+                 logger=None, log_file_name=None, log_level=logging.DEBUG,
+                 name=None):
+        super(TcpTanksServer, self).__init__(name=name)
         self.address = address
         self.port = port
         self.pipe_connection = pipe_connection
-        self.server_socket.setblocking(False)
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+        else:
+            self.setup_logging(log_file_name, log_level)
+
+    def setup_logging(self, log_file_name, log_level=logging.DEBUG):
+        print("Setting up logging...")
+        self.logger = logging.getLogger(__name__)
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(log_level)
+        formatter = logging.Formatter('%(asctime) - %(name)s - %(level)s:'
+                                      '%(message)s')
+        console_handler.setFormatter(formatter)
+        self.logger.addHandler(console_handler)
+        if log_file_name:
+            file_handler = logging.FileHandler(log_file_name)
+            file_handler.setLevel(log_level)
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
+        print("Set up: %s" % repr(self.logger))
 
     def run(self):
         self.server_socket.bind((self.address, self.port))
@@ -25,48 +48,65 @@ class TcpTanksServer(Process):
 
     def server_loop(self):
         # Wait for a connection
-        print('Waiting for a connection...')
+        self.logger.info('Waiting for a connection...')
         connection, client_address = self.server_socket.accept()
-        try:
-            print('Connection from', client_address)
-            if self.pipe_connection.poll():
-                self.send_data_to_client(connection)
-            else:
-                connection.sendall(struct.pack('>d', 0))
-            packet_number = 0
+        signal.signal(signal.SIGINT, partial(signal_handler,
+                                             connection=connection))
+        self.logger.info('Connection from', client_address)
+        if self.pipe_connection.poll():
+            self.send_data_to_client(connection)
+        else:
+            connection.sendall(struct.pack('>d', 0))
+        packet_number = 0
 
-            while True:
+        while True:
+            try:
+                data = connection.recv(1024)
+                packet_number += 1
                 try:
-                    data = connection.recv(1024)
-                    packet_number += 1
-                    try:
-                        real_data = struct.unpack(">d", data)
-                    except struct.error:
-                        real_data = (data,)
-                    print('received "%s", timestamp: %s' % (real_data[0],
-                                                            datetime.now()))
-                    if self.pipe_connection.poll():
-                        self.send_data_to_client(connection)
-                except socket.error as e:
-                    print("Socket error:", e)
-                    print('No more data from %s:%d, overall packets'
-                          'transmitted: %d ' % (client_address[0],
-                                                client_address[1],
-                                                packet_number))
-                    break
-        except KeyboardInterrupt:
-            print("Got Ctrl+C, closing...")
-            connection.close()
-            print("Connection closed")
-        finally:
-            # Clean up the connection
-            connection.close()
+                    real_data = struct.unpack(">dddd", data)
+                except struct.error:
+                    real_data = (data,)
+                self.logger.debug('received "%s", timestamp: %s' %
+                                  (real_data[0], datetime.now()))
+                if self.pipe_connection.poll():
+                    self.send_data_to_client(connection)
+            except socket.error as e:
+                self.logger.error("Socket error:", e)
+                self.logger.info('No more data from %s:%d, overall packets'
+                                 'transmitted: %d ' % (client_address[0],
+                                                       client_address[1],
+                                                       packet_number))
+                break
+
+    def close_connection(self, connection):
+        connection.close()
+        self.logger.info("Connection closed")
 
     def send_data_to_client(self, connection):
-        print('Sending data to the client')
+        self.logger.info('Sending data to the client')
         try:
             data_from_ds = self.pipe_connection.recv()
         except EOFError:
-            print("ERROR: no data in pipe!")
+            self.logger.error("ERROR: no data in pipe!")
         else:
-            connection.sendall(struct.pack('>d', data_from_ds))
+            data_format = '>' + 'd' * len(data_from_ds)
+            connection.sendall(struct.pack(data_format, *data_from_ds))
+
+
+def signal_handler(signal, frame, connection=None):
+    print('>>> Received %s, closing...!' % signal)
+    if connection:
+        print(">>>Closing connection...")
+        connection.close()
+    sys.exit(0)
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+    first_connection, second_connection = Pipe()
+    tcp_server = TcpTanksServer(second_connection, name="TcpTanksServer",
+                                log_file_name="tcp_tanks_server.log")
+    sample_data = [30.0, 30.0, 22.0, 140.312246999846, 100.0, 0,
+                   128.23238467535595, 132.87848556939056]
+    tcp_server.start()
+    first_connection.send(sample_data)
