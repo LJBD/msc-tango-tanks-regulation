@@ -5,4 +5,4 @@
 *.fmu
 *log.txt
 *result.txt
-
+*.log
