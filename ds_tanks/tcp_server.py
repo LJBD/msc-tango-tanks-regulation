@@ -6,6 +6,7 @@ import struct
 from datetime import datetime
 from functools import partial
 from multiprocessing import Process, Pipe
+from time import sleep
 
 from ds_tanks.tanks_utils import signal_handler, setup_logging, \
     setup_logging_to_file
@@ -33,7 +34,14 @@ class TcpTanksServer(Process):
         self.logger.setLevel(log_level)
 
     def run(self):
-        self.server_socket.bind((self.address, self.port))
+        try:
+            self.server_socket.bind((self.address, self.port))
+        except socket.error as e:
+            if "Address already in use" in e.message:
+                self.logger.warning("Address already in use, going to sleep for"
+                                    "10 seconds!")
+                sleep(10)
+                self.server_socket.bind((self.address, self.port))
         self.server_socket.listen(1)
         while True:
             self.server_loop()
