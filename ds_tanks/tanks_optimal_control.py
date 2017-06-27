@@ -1,6 +1,9 @@
 import logging
 from math import sqrt
-from multiprocessing import Pool, Pipe
+from multiprocessing import Pool, Pipe, Event
+
+import signal
+
 try:
     from tango import DevState, DebugIt
     from tango.server import Device, device_property, attribute, command, \
@@ -51,7 +54,8 @@ class TanksOptimalControl(Device):
     switch_times = []
     process_pool = Pool()
     my_pipe_end, other_pipe_end = Pipe()
-    tcp_server_process = None
+    tcp_process = None
+    tcp_kill_event = Event()
 
     # ----------
     # Properties
@@ -214,6 +218,7 @@ class TanksOptimalControl(Device):
     # Derived methods
     # ---------------
     def init_device(self):
+        signal.signal(signal.SIGINT, self.signal_handler)
         super(TanksOptimalControl, self).init_device()
         self.set_state(DevState.OFF)
         self.set_status("Model not loaded.")
@@ -223,14 +228,20 @@ class TanksOptimalControl(Device):
             address, port = self.TCPServerAddress.split(':')
             self.debug_stream("Setting up TCP server on %s:%d" % (address,
                                                                   int(port)))
-            self.tcp_server_process = TCPTanksServer(self.other_pipe_end,
-                                                     address, int(port),
-                                                     log_level=logging.INFO,
-                                                     name="TCPServer")
-            self.tcp_server_process.start()
+            self.tcp_process = TCPTanksServer(self.other_pipe_end,
+                                              address, int(port),
+                                              log_level=logging.INFO,
+                                              name="TCPServer",
+                                              kill_event=self.tcp_kill_event)
+            self.tcp_process.start()
 
     def delete_device(self):
-        self.process_pool.join()
+        self.tcp_kill_event.set()
+        self.process_pool.join(1)
+        try:
+            self.tcp_process.join(2)
+        except AttributeError:
+            pass
         super(TanksOptimalControl, self).delete_device()
 
     # --------
@@ -390,16 +401,19 @@ class TanksOptimalControl(Device):
         data_for_sending = self.get_data_for_ext_control()
         self.my_pipe_end.send(data_for_sending)
 
-    @command(polling_period=100)
+    @command(polling_period=500)
     def GetDataFromDirectControl(self):
         if self.my_pipe_end.poll():
             try:
+                i = 0
                 while True:
                     received_data = self.my_pipe_end.recv()
                     self.h1_current = received_data[0]
                     self.h2_current = received_data[1]
                     self.h3_current = received_data[2]
                     self.control_current = received_data[3]
+                    i += 1
+                    print("Loop %d" % i)
             except EOFError:
                 self.debug_stream("No more data from direct control.")
 
@@ -477,11 +491,25 @@ class TanksOptimalControl(Device):
 
     def get_data_for_ext_control(self):
         data = [self.h1_final, self.h2_final, self.h3_final, self.t_opt,
-                self.optimal_control[0], 0, self.switch_times[0],
-                self.switch_times[1]]
+                self.optimal_control[0], 0.0, self.switch_times[0],
+                0]
+        try:
+            data[7] = self.switch_times[1]
+        except IndexError:
+            data[7] = self.t_opt
         if self.optimal_control[0] == 0:
             data[5] = self.MaxControl
         return data
+
+    def signal_handler(self, signal, frame):
+        print("Received Ctrl+C")
+        self.tcp_kill_event.set()
+        self.process_pool.join(1)
+        try:
+            self.tcp_process.join(2)
+        except AttributeError:
+            pass
+        self.warning_stream("Received SIGINT, shut down threads, going down.")
 
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__

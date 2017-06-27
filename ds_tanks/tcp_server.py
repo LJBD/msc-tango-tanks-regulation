@@ -17,11 +17,12 @@ class TCPTanksServer(Process):
 
     def __init__(self, pipe_connection, address="0.0.0.0", port=4567,
                  logger=None, log_file_name=None, log_level=logging.DEBUG,
-                 name=None):
+                 name=None, kill_event=None):
         super(TCPTanksServer, self).__init__(name=name)
         self.address = address
         self.port = port
         self.pipe_connection = pipe_connection
+        self.kill_event = kill_event
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
                                       ' %(message)s')
         if isinstance(logger, logging.Logger):
@@ -36,8 +37,13 @@ class TCPTanksServer(Process):
     def run(self):
         self.server_socket.bind((self.address, self.port))
         self.server_socket.listen(1)
-        while True:
-            self.server_loop()
+        try:
+            while True:
+                self.server_loop()
+                self.check_kill_signal()
+        except KeyboardInterrupt:
+            self.logger.warning("Received SIGINT, closing...")
+            self.server_socket.close()
 
     def server_loop(self):
         # Wait for a connection
@@ -66,14 +72,28 @@ class TCPTanksServer(Process):
                 if self.pipe_connection.poll():
                     self.send_data_to_client(connection)
                 if not data:
+                    self.send_transmission_end_log(client_address,
+                                                   packet_number)
                     break
+                self.check_kill_signal()
             except socket.error as e:
                 self.logger.error("Socket error:", e)
-                self.logger.info('No more data from %s:%d, overall packets'
-                                 'transmitted: %d ' % (client_address[0],
-                                                       client_address[1],
-                                                       packet_number))
+                self.send_transmission_end_log(client_address, packet_number)
                 break
+
+    def check_kill_signal(self):
+        try:
+            if self.kill_event.is_set():
+                self.logger.warning("Received a kill event, closing...")
+                self.server_socket.close()
+        except AttributeError:
+            pass
+
+    def send_transmission_end_log(self, client_address, packet_number):
+        self.logger.info('No more data from %s:%d, overall packets'
+                         'transmitted: %d ' % (client_address[0],
+                                               client_address[1],
+                                               packet_number))
 
     def close_connection(self, connection):
         connection.close()
@@ -83,6 +103,7 @@ class TCPTanksServer(Process):
         self.logger.info('Sending data to the client')
         try:
             data_from_ds = self.pipe_connection.recv()
+            self.logger.info("Data to be sent: %s" % repr(data_from_ds))
         except EOFError:
             self.logger.error("ERROR: no data in pipe!")
         else:
