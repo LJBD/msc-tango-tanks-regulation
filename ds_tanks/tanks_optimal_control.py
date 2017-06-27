@@ -1,4 +1,5 @@
 import logging
+from functools import partial
 from math import sqrt
 from multiprocessing import Pool, Pipe, Event
 
@@ -18,7 +19,7 @@ from pyfmi.fmi import load_fmu
 
 from ds_tanks.tcp_server import TCPTanksServer
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
-    run_optimisation
+    run_optimisation, signal_handler
 
 
 class TanksOptimalControl(Device):
@@ -218,7 +219,6 @@ class TanksOptimalControl(Device):
     # Derived methods
     # ---------------
     def init_device(self):
-        signal.signal(signal.SIGINT, self.signal_handler)
         super(TanksOptimalControl, self).init_device()
         self.set_state(DevState.OFF)
         self.set_status("Model not loaded.")
@@ -234,9 +234,15 @@ class TanksOptimalControl(Device):
                                               name="TCPServer",
                                               kill_event=self.tcp_kill_event)
             self.tcp_process.start()
+        signal.signal(signal.SIGINT, partial(signal_handler,
+                                             kill_event=self.tcp_kill_event,
+                                             pool=self.process_pool,
+                                             process=self.tcp_process,
+                                             logger=self.warn_stream))
 
     def delete_device(self):
         self.tcp_kill_event.set()
+        self.process_pool.close()
         self.process_pool.join(1)
         try:
             self.tcp_process.join(2)
@@ -501,19 +507,10 @@ class TanksOptimalControl(Device):
             data[5] = self.MaxControl
         return data
 
-    def signal_handler(self, signal, frame):
-        print("Received Ctrl+C")
-        self.tcp_kill_event.set()
-        self.process_pool.join(1)
-        try:
-            self.tcp_process.join(2)
-        except AttributeError:
-            pass
-        self.warning_stream("Received SIGINT, shut down threads, going down.")
-
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
 run = TanksOptimalControl.run_server
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
     run()

@@ -219,11 +219,21 @@ def print_stationary_point(identifier, h1_0, h2_0, h3_0, u_0):
     print('h3 = %f' % h3_0)
 
 
-def signal_handler(signal, frame, connection=None):
+def signal_handler(signal, frame, connection=None, kill_event=None, pool=None,
+                   process=None, logger=None):
     print('>>> Received %s, closing...!' % signal)
     if connection:
         print(">>>Closing connection...")
         connection.close()
+    if kill_event:
+        kill_event.set()
+    if pool:
+        pool.close()
+        pool.join(1)
+    if process:
+        process.join(2)
+    if logger:
+        logger("Received SIGINT, shut down threads, going down.")
     sys.exit(0)
 
 
