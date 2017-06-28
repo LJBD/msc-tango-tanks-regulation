@@ -1,10 +1,8 @@
 import logging
+import signal
 from functools import partial
 from math import sqrt
 from multiprocessing import Pool, Pipe, Event
-
-import signal
-
 try:
     from tango import DevState, DebugIt
     from tango.server import Device, device_property, attribute, command, \
@@ -407,19 +405,15 @@ class TanksOptimalControl(Device):
         data_for_sending = self.get_data_for_ext_control()
         self.my_pipe_end.send(data_for_sending)
 
-    @command(polling_period=500)
+    @command(polling_period=100)
     def GetDataFromDirectControl(self):
         if self.my_pipe_end.poll():
             try:
-                i = 0
-                while True:
-                    received_data = self.my_pipe_end.recv()
-                    self.h1_current = received_data[0]
-                    self.h2_current = received_data[1]
-                    self.h3_current = received_data[2]
-                    self.control_current = received_data[3]
-                    i += 1
-                    print("Loop %d" % i)
+                received_data = self.my_pipe_end.recv()
+                self.h1_current = received_data[0]
+                self.h2_current = received_data[1]
+                self.h3_current = received_data[2]
+                self.control_current = received_data[3]
             except EOFError:
                 self.debug_stream("No more data from direct control.")
 

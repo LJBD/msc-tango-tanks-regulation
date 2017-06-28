@@ -223,7 +223,7 @@ def signal_handler(signal, frame, connection=None, kill_event=None, pool=None,
                    process=None, logger=None):
     print('>>> Received %s, closing...!' % signal)
     if connection:
-        print(">>>Closing connection...")
+        print(">>> Closing connection...")
         connection.close()
     if kill_event:
         kill_event.set()
@@ -237,9 +237,9 @@ def signal_handler(signal, frame, connection=None, kill_event=None, pool=None,
     sys.exit(0)
 
 
-def setup_logging(log_file_name, formatter):
+def setup_logging(log_file_name, formatter, logger_name=__name__):
     print("Setting up logging...")
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(logger_name)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
