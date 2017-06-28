@@ -3,10 +3,10 @@ import logging
 import socket
 import signal
 import struct
+import time
 from datetime import datetime
 from functools import partial
 from multiprocessing import Process, Pipe
-from time import sleep
 
 from ds_tanks.tanks_utils import signal_handler, setup_logging, \
     setup_logging_to_file
@@ -23,7 +23,7 @@ class TCPTanksServer(Process):
         self.port = port
         self.pipe_connection = pipe_connection
         self.kill_event = kill_event
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
+        formatter = logging.Formatter('%(asctime)s|%(name)s|%(levelname)s:'
                                       ' %(message)s')
         if isinstance(logger, logging.Logger):
             self.logger = logger
@@ -31,7 +31,7 @@ class TCPTanksServer(Process):
                 handler = setup_logging_to_file(formatter, log_file_name)
                 self.logger.addHandler(handler)
         else:
-            self.logger = setup_logging(log_file_name, formatter)
+            self.logger = setup_logging(log_file_name, formatter, __name__)
         self.logger.setLevel(log_level)
 
     def run(self):
@@ -57,7 +57,6 @@ class TCPTanksServer(Process):
         else:
             connection.sendall(struct.pack('>d', 0))
         packet_number = 0
-
         while True:
             try:
                 data = connection.recv(1024)
@@ -116,10 +115,10 @@ if __name__ == '__main__':
     first_connection, second_connection = Pipe()
     tcp_server = TCPTanksServer(second_connection, name="TcpTanksServer",
                                 log_file_name="tcp_tanks_server.log",
-                                log_level=logging.INFO)
+                                log_level=logging.DEBUG)
     sample_data = [30.0, 30.0, 22.0, 140.312246999846, 100.0, 0,
                    128.23238467535595, 132.87848556939056]
     tcp_server.start()
     first_connection.send(sample_data)
-    sleep(20)
+    time.sleep(20)
     print(first_connection.recv())

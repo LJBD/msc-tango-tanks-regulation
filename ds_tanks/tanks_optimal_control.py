@@ -222,6 +222,10 @@ class TanksOptimalControl(Device):
         self.set_status("Model not loaded.")
         self.model_path = get_model_path(model_file=self.ModelFile)
         self.info_stream("Project path: %s" % self.model_path)
+        attributes = ["H1Current", "H2Current", "H3Current",
+                      "ControlCurrent"]
+        self.set_events_for_attributes(attributes)
+
         if self.TCPServerEnabled:
             address, port = self.TCPServerAddress.split(':')
             self.debug_stream("Setting up TCP server on %s:%d" % (address,
@@ -408,18 +412,41 @@ class TanksOptimalControl(Device):
     @command(polling_period=100)
     def GetDataFromDirectControl(self):
         if self.my_pipe_end.poll():
+            attributes = {"H1Current": None, "H2Current": None,
+                          "H3Current": None, "ControlCurrent": None}
             try:
                 received_data = self.my_pipe_end.recv()
-                self.h1_current = received_data[0]
-                self.h2_current = received_data[1]
-                self.h3_current = received_data[2]
-                self.control_current = received_data[3]
-            except EOFError:
+                self.h1_current = attributes["H1Current"] = received_data[0]
+                self.h2_current = attributes["H2Current"] = received_data[1]
+                self.h3_current = attributes["H3Current"] = received_data[2]
+                self.control_current = attributes["ControlCurrent"] =\
+                    received_data[3]
+                self.push_events_for_attributes(attributes)
+            except EOFError as e:
                 self.debug_stream("No more data from direct control.")
+                for attr_name in attributes.keys():
+                    attributes[attr_name] = e
+                self.push_events_for_attributes(attributes)
 
     # -------------
     # Other methods
     # -------------
+    def set_events_for_attributes(self, attributes):
+        for attr_name in attributes:
+            if hasattr(self, attr_name):
+                self.set_change_event(attr_name, True, False)
+                self.set_archive_event(attr_name, True, False)
+            else:
+                raise AttributeError("No attribute named %s" % attr_name)
+
+    def push_events_for_attributes(self, attributes):
+        for attr_name, attr_value in attributes.items():
+            if hasattr(self, attr_name):
+                self.push_change_event(attr_name, attr_value)
+                self.push_archive_event(attr_name, attr_value)
+            else:
+                raise AttributeError("No attribute named %s" % attr_name)
+
     def get_equilibrium_control_for_level(self, i):
         outflow = getattr(self, "Tank%dOutflow" % i)
         final_level = getattr(self, "h%d_final" % i)

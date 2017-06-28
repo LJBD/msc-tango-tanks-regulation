@@ -21,7 +21,8 @@ def main(with_commands=True):
         # sleep(5)
         print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
-        sleep(10)
+        sleep(20)
+        opt_dev.command_inout_asynch("SendControl")
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
         opt_time = opt_dev.read_attribute("OptimalTime").value
@@ -58,4 +59,4 @@ def get_matlab_data(device):
 
 
 if __name__ == '__main__':
-    main(False)
+    main(True)
