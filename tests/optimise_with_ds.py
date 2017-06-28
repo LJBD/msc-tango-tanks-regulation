@@ -10,15 +10,18 @@ from ds_tanks.tanks_utils import plot_with_optimal_trajectories
 def main(with_commands=True):
     opt_dev = DeviceProxy("opt/ctrl/1")
     if with_commands:
-        print("Getting initial values...")
-        opt_dev.command_inout_asynch("GetEquilibriumFromControl", 88.5)
-        sleep(5)
-        print("Running simulation...")
-        opt_dev.command_inout_asynch("RunSimulation")
-        sleep(5)
+        print("Setting initial values...")
+        # opt_dev.command_inout_asynch("GetEquilibriumFromControl", 88.5)
+        # sleep(5)
+        opt_dev.write_read_attribute("H1Final", 15)
+        opt_dev.write_read_attribute("H2Final", 15)
+        opt_dev.write_read_attribute("H3Final", 12)
+        # print("Running simulation...")
+        # opt_dev.command_inout_asynch("RunSimulation")
+        # sleep(5)
         print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
-        sleep(5)
+        sleep(10)
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
         opt_time = opt_dev.read_attribute("OptimalTime").value
