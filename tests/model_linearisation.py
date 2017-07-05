@@ -52,7 +52,7 @@ def run_linearisation(parameters=None):
 
     nonlinear_jmu = compile_jmu("TanksPkg.ThreeTanks", model_path)
     nonlinear_model = JMUModel(nonlinear_jmu)
-    # set_model_parameters(nonlinear_model, parameters)
+    set_model_parameters(nonlinear_model, parameters)
 
     linear_model = LinearModel(*linearize_dae(nonlinear_model))
 
@@ -60,15 +60,8 @@ def run_linearisation(parameters=None):
     print(linear_model.get_linearisation_point_info())
 
     q_matrix = numpy.identity(3)
-    r_matrix = numpy.identity(3)
+    r_matrix = numpy.identity(1)
 
-    states = linear_model.B.shape[0]
-    inputs = linear_model.B.shape[1]
-    print("Got %d states and %d inputs" % (states, inputs))
-
-    # elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
-    #               R.shape[0] != ninputs or R.shape[1] != ninputs or
-    #               N.shape[0] != nstates or N.shape[1] != ninputs):
     K, S, E = control.lqr(linear_model.A, linear_model.B, q_matrix, r_matrix)
     print("Linear-Quadratic Regulator:\nK matrix:\n%s" % K)
     print("S matrix:\n", S)
