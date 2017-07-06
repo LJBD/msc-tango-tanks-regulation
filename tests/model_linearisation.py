@@ -45,10 +45,10 @@ class LinearModel(object):
         return lin_point
 
 
-def run_linearisation(parameters=None):
+def run_linearisation(model_path, parameters=None, q_matrix=numpy.identity(3),
+                      r_matrix=numpy.identity(1)):
     if parameters is None:
-        parameters = {"h1": 20, "h2": 20, "h3": 20, "u": 40}
-    model_path = get_model_path()
+        parameters = {"h1": 20, "h2": 20, "h3": 20}
 
     nonlinear_jmu = compile_jmu("TanksPkg.ThreeTanks", model_path)
     nonlinear_model = JMUModel(nonlinear_jmu)
@@ -59,13 +59,26 @@ def run_linearisation(parameters=None):
     print(linear_model)
     print(linear_model.get_linearisation_point_info())
 
-    q_matrix = numpy.identity(3)
-    r_matrix = numpy.identity(1)
+    if not numpy.array_equal(linear_model.E, numpy.identity(3)):
+        minus_e = numpy.multiply(linear_model.E, -1)
+        if numpy.array_equal(minus_e, numpy.identity(3)):
+            print("Rescaling by -1...")
+            numpy.multiply(linear_model.A, -1, linear_model.A)
+            numpy.multiply(linear_model.B, -1, linear_model.B)
+            numpy.multiply(linear_model.E, -1, linear_model.E)
+            print("Rescaled matrices:\nE:\n%s" % linear_model.E)
+            print("A:\n%s" % linear_model.A)
+            print("B:\n%s" % linear_model.B)
+        else:
+            raise ValueError("Matrix E not scalable to identity!")
 
-    K, S, E = control.lqr(linear_model.A, linear_model.B, q_matrix, r_matrix)
-    print("Linear-Quadratic Regulator:\nK matrix:\n%s" % K)
-    print("S matrix:\n", S)
-    print("E matrix:\n", E)
+    k_matrix, s_matrix, e_matrix = control.lqr(linear_model.A, linear_model.B,
+                                               q_matrix, r_matrix)
+    print("Linear-Quadratic Regulator:\nK matrix:\n%s" % k_matrix)
+    print("S matrix:\n", s_matrix)
+    print("E matrix:\n", e_matrix)
+
+    return k_matrix, s_matrix, e_matrix
 
 
 def get_points_per_time(time):
@@ -94,5 +107,5 @@ def plot_points_per_simulation():
 
 
 if __name__ == '__main__':
-    run_linearisation()
+    run_linearisation(get_model_path())
     # plot_points_per_simulation()
