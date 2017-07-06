@@ -1,15 +1,50 @@
 from __future__ import print_function
 import os
-
 import logging
+import control
 import numpy
 import sys
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu
-from pymodelica import compile_fmu
-from pyjmi import transfer_optimization_problem
+from pyjmi.linearization import linearize_dae
+from pymodelica import compile_fmu, compile_jmu
+from pyjmi import transfer_optimization_problem, JMUModel
 
 U_MAX = 100.0
+
+
+class LinearModel(object):
+    def __init__(self, E, A, B, F, g, state_names, input_names, algebraic_names,
+                 dx0, x0, u0, w0, t0):
+        self.E = E
+        self.A = A
+        self.B = B
+        self.F = F
+        self.g = g
+        self.state_names = state_names
+        self.input_names = input_names
+        self.algebraic_names = algebraic_names
+        self.dx0 = dx0
+        self.x0 = x0
+        self.u0 = u0
+        self.w0 = w0
+        self.t0 = t0
+
+    def __repr__(self):
+        representation = "Linear model with states %s," % self.state_names
+        representation += "inputs %s," % self.input_names
+        representation += " and algebraic values %s" % self.algebraic_names
+        representation += "\nE matrix: \n%s" % repr(self.E)
+        representation += "\nA matrix: \n%s" % repr(self.A)
+        representation += "\nB matrix: \n%s" % repr(self.B)
+        representation += "\nF matrix: \n%s" % repr(self.F)
+        return representation
+
+    def get_linearisation_point_info(self):
+        lin_point = "Point of linearisation:\nx0:\n%s" % self.x0
+        lin_point += "\ndx0: \n%s" % self.dx0
+        lin_point += "\nu0: \n%s" % self.u0
+        return lin_point
 
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
@@ -69,8 +104,8 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
         return init_res
     else:
         return_dict = {'h1': init_res['h1'], 'h2': init_res['h2'], 'h3':
-                       init_res['h3'], 'u': init_res['u'], 'time':
-                       init_res['time']}
+            init_res['h3'], 'u': init_res['u'], 'time':
+                           init_res['time']}
         return return_dict
 
 
@@ -132,6 +167,34 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     opt_result = {"h1": res['h1'], "h2": res['h2'], "h3": res['h3'],
                   "u": res['u'], "time": res['time']}
     return opt_result
+
+
+def run_linearisation(model_path, parameters=None):
+    if parameters is None:
+        parameters = {"h1": 20, "h2": 20, "h3": 20}
+
+    nonlinear_jmu = compile_jmu("TanksPkg.ThreeTanks", model_path)
+    nonlinear_model = JMUModel(nonlinear_jmu)
+    set_model_parameters(nonlinear_model, parameters)
+
+    linear_model = LinearModel(*linearize_dae(nonlinear_model))
+
+    if not numpy.array_equal(linear_model.E, numpy.identity(3)):
+        minus_e = numpy.multiply(linear_model.E, -1)
+        if numpy.array_equal(minus_e, numpy.identity(3)):
+            numpy.multiply(linear_model.A, -1, linear_model.A)
+            numpy.multiply(linear_model.B, -1, linear_model.B)
+            numpy.multiply(linear_model.E, -1, linear_model.E)
+        else:
+            raise ValueError("Matrix E not scalable to identity!")
+    return linear_model
+
+
+def get_linear_quadratic_regulator(linear_model, q_matrix=numpy.identity(3),
+                                   r_matrix=numpy.identity(1)):
+    k_matrix, s_matrix, e_matrix = control.lqr(linear_model.A, linear_model.B,
+                                               q_matrix, r_matrix)
+    return k_matrix, s_matrix, e_matrix
 
 
 def set_model_parameters(model, parameters):
