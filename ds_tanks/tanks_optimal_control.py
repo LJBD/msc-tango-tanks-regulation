@@ -242,11 +242,6 @@ class TanksOptimalControl(Device):
     def K(self):
         return self.k_lqr
 
-    @attribute(dtype=(float,), max_dim_x=20,
-               doc="Eigenvalues of the closed-loop system with LQ regulation")
-    def Eigenvalues(self):
-        return self.eigenvalues_lqr
-
     @attribute(dtype=((float,),), max_dim_x=3, max_dim_y=3,
                doc="Solution of Ricatti algebraic equation in LQR problem.")
     def S(self):
@@ -479,12 +474,17 @@ class TanksOptimalControl(Device):
                                          u=u)
         self.debug_stream(repr(linear_model))
         self.debug_stream(linear_model.get_linearisation_point_info())
-        assert linear_model.x0 == [self.h1_final, self.h2_final, self.h3_final]
         k, s, e = get_linear_quadratic_regulator(linear_model, q=self.q_lqr,
                                                  r=self.r_lqr)
-        self.k_lqr = k
+        self.k_lqr = k[0]
         self.s_lqr = s
         self.eigenvalues_lqr = e
+
+    @command(dtype_out=str, doc_in="A string representation of eigenvalues of"
+                                   " a closed loop system with LQR")
+    @DebugIt()
+    def GetEigenvaluesFromClosedLoopWithLQR(self):
+        return repr(self.eigenvalues_lqr)
 
     # -------------
     # Other methods
