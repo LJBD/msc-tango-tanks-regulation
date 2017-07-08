@@ -193,13 +193,13 @@ def run_linearisation(model_path, h10=20.0, h20=20.0, h30=20.0,
     return linear_model
 
 
-def get_linear_quadratic_regulator(linear_model, q_matrix=numpy.identity(3),
-                                   r_matrix=numpy.identity(1)):
+def get_linear_quadratic_regulator(linear_model, q=numpy.identity(3),
+                                   r=numpy.identity(1)):
     ctrb_matrix = control.ctrb(linear_model.A, linear_model.B)
     if ctrb_matrix.shape[0] != linear_model.A.shape[0]:
         raise ValueError("System is not controllable!")
     k_matrix, s_matrix, e_matrix = control.lqr(linear_model.A, linear_model.B,
-                                               q_matrix, r_matrix)
+                                               q, r)
     return k_matrix, s_matrix, e_matrix
 
 

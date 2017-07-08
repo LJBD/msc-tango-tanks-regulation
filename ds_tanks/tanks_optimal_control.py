@@ -1,4 +1,5 @@
 import logging
+import numpy
 import signal
 from functools import partial
 from math import sqrt
@@ -56,9 +57,11 @@ class TanksOptimalControl(Device):
     my_pipe_end, other_pipe_end = Pipe()
     tcp_process = None
     tcp_kill_event = Event()
+    q_lqr = numpy.identity(3)
+    r_lqr = 1.0
     k_lqr = [0.0]
     eigenvalues_lqr = [0.0]
-    s_matrix_lqr = [[0.0], [0.0]]
+    s_lqr = [[0.0], [0.0]]
 
     # ----------
     # Properties
@@ -217,6 +220,23 @@ class TanksOptimalControl(Device):
     def SwitchTimes(self):
         return self.switch_times
 
+    @attribute(dtype=((float,),), max_dim_x=3, max_dim_y=3,
+               doc="Matrix of input weights for LQR problem.")
+    def Q(self):
+        return self.q_lqr
+
+    @Q.write
+    def Q(self, value):
+        self.q_lqr = value
+
+    @attribute(dtype=float, doc="Control weight for LQR problem.")
+    def R(self):
+        return self.r_lqr
+
+    @R.write
+    def R(self, value):
+        self.r_lqr = value
+
     @attribute(dtype=(float,), max_dim_x=20,
                doc="K vector from LQ regulator")
     def K(self):
@@ -230,7 +250,7 @@ class TanksOptimalControl(Device):
     @attribute(dtype=((float,),), max_dim_x=3, max_dim_y=3,
                doc="Solution of Ricatti algebraic equation in LQR problem.")
     def S(self):
-        return self.s_matrix_lqr
+        return self.s_lqr
 
     # ---------------
     # Derived methods
@@ -460,8 +480,11 @@ class TanksOptimalControl(Device):
         self.debug_stream(repr(linear_model))
         self.debug_stream(linear_model.get_linearisation_point_info())
         assert linear_model.x0 == [self.h1_final, self.h2_final, self.h3_final]
-        self.k_lqr, self.s_matrix_lqr,\
-            self.eigenvalues_lqr = get_linear_quadratic_regulator(linear_model)
+        k, s, e = get_linear_quadratic_regulator(linear_model, q=self.q_lqr,
+                                                 r=self.r_lqr)
+        self.k_lqr = k
+        self.s_lqr = s
+        self.eigenvalues_lqr = e
 
     # -------------
     # Other methods
