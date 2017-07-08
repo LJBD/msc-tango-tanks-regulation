@@ -440,6 +440,8 @@ class TanksOptimalControl(Device):
         if self.SendControlMode == "SwitchTimes":
             if not self.switch_times:
                 self.NormaliseOptimalControl()
+        if self.k_lqr == [0.0]:
+            self.GetLQR()
         data_for_sending = self.get_data_for_ext_control()
         self.my_pipe_end.send(data_for_sending)
 
