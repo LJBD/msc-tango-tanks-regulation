@@ -32,8 +32,8 @@ def plot_points_per_simulation():
 
 
 if __name__ == '__main__':
-    linear_model = run_linearisation(get_model_path(), {"h1": 30, "h2": 30,
-                                                        "h3": 22})
+    linear_model = run_linearisation(get_model_path(), h10=30, h20=30, h30=22,
+                                     u=86.566234)
     print(linear_model)
     print(linear_model.get_linearisation_point_info())
 

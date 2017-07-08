@@ -17,7 +17,8 @@ from pyfmi.fmi import load_fmu
 
 from ds_tanks.tcp_server import TCPTanksServer
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
-    run_optimisation, signal_handler
+    run_optimisation, signal_handler, run_linearisation, \
+    get_linear_quadratic_regulator
 
 
 class TanksOptimalControl(Device):
@@ -55,6 +56,9 @@ class TanksOptimalControl(Device):
     my_pipe_end, other_pipe_end = Pipe()
     tcp_process = None
     tcp_kill_event = Event()
+    k_lqr = [0.0]
+    eigenvalues_lqr = [0.0]
+    s_matrix_lqr = [[0.0], [0.0]]
 
     # ----------
     # Properties
@@ -213,6 +217,21 @@ class TanksOptimalControl(Device):
     def SwitchTimes(self):
         return self.switch_times
 
+    @attribute(dtype=(float,), max_dim_x=20,
+               doc="K vector from LQ regulator")
+    def K(self):
+        return self.k_lqr
+
+    @attribute(dtype=(float,), max_dim_x=20,
+               doc="Eigenvalues of the closed-loop system with LQ regulation")
+    def Eigenvalues(self):
+        return self.eigenvalues_lqr
+
+    @attribute(dtype=((float,),), max_dim_x=3, max_dim_y=3,
+               doc="Solution of Ricatti algebraic equation in LQR problem.")
+    def S(self):
+        return self.s_matrix_lqr
+
     # ---------------
     # Derived methods
     # ---------------
@@ -315,7 +334,7 @@ class TanksOptimalControl(Device):
         if False in checks:
             self.control_value = self.get_equilibrium_control()
             self.warn_stream("At least one of levels is not from"
-                             "equilibrium, setting control to %f" %
+                             " equilibrium, setting control to %f" %
                              self.control_value)
         keyword_args = {'u': self.control_value,
                         't_final': self.SimulationFinalTime,
@@ -427,6 +446,22 @@ class TanksOptimalControl(Device):
                 for attr_name in attributes.keys():
                     attributes[attr_name] = e
                 self.push_events_for_attributes(attributes)
+
+    @command
+    @DebugIt()
+    def GetLQR(self):
+        u = self.get_equilibrium_control()
+        linear_model = run_linearisation(self.model_path, h10=self.h1_final,
+                                         h20=self.h2_final, h30=self.h3_final,
+                                         tank1_outflow=self.Tank1Outflow,
+                                         tank2_outflow=self.Tank2Outflow,
+                                         tank3_outflow=self.Tank3Outflow,
+                                         u=u)
+        self.debug_stream(repr(linear_model))
+        self.debug_stream(linear_model.get_linearisation_point_info())
+        assert linear_model.x0 == [self.h1_final, self.h2_final, self.h3_final]
+        self.k_lqr, self.s_matrix_lqr,\
+            self.eigenvalues_lqr = get_linear_quadratic_regulator(linear_model)
 
     # -------------
     # Other methods

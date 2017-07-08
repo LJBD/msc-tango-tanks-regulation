@@ -169,13 +169,16 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     return opt_result
 
 
-def run_linearisation(model_path, parameters=None):
-    if parameters is None:
-        parameters = {"h1": 20, "h2": 20, "h3": 20}
+def run_linearisation(model_path, h10=20.0, h20=20.0, h30=20.0,
+                      tank1_outflow=26.0, tank2_outflow=26.0,
+                      tank3_outflow=28.0, u=0.0):
+    parameters = {"h10": h10, "h20": h20, "h30": h30, "C1": tank1_outflow,
+                  "C2": tank2_outflow, "C3": tank3_outflow, "u": u}
 
     nonlinear_jmu = compile_jmu("TanksPkg.ThreeTanks", model_path)
     nonlinear_model = JMUModel(nonlinear_jmu)
     set_model_parameters(nonlinear_model, parameters)
+    nonlinear_model.initialize()
 
     linear_model = LinearModel(*linearize_dae(nonlinear_model))
 
