@@ -554,7 +554,8 @@ class TanksOptimalControl(Device):
     def get_data_for_ext_control(self):
         data = [self.h1_final, self.h2_final, self.h3_final, self.t_opt,
                 self.optimal_control[0], 0.0, self.switch_times[0],
-                0]
+                0, self.get_equilibrium_control(), self.k_lqr[0], self.k_lqr[1],
+                self.k_lqr[2]]
         try:
             data[7] = self.switch_times[1]
         except IndexError:
