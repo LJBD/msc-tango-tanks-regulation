@@ -14,12 +14,12 @@ U_MAX = 100.0
 
 
 class LinearModel(object):
-    def __init__(self, E, A, B, F, g, state_names, input_names, algebraic_names,
-                 dx0, x0, u0, w0, t0):
-        self.E = E
-        self.A = A
-        self.B = B
-        self.F = F
+    def __init__(self, e_matrix, a_matrix, b_matrix, f_matrix, g, state_names,
+                 input_names, algebraic_names, dx0, x0, u0, w0, t0):
+        self.E = e_matrix
+        self.A = a_matrix
+        self.B = b_matrix
+        self.F = f_matrix
         self.g = g
         self.state_names = state_names
         self.input_names = input_names
@@ -104,8 +104,8 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
         return init_res
     else:
         return_dict = {'h1': init_res['h1'], 'h2': init_res['h2'], 'h3':
-            init_res['h3'], 'u': init_res['u'], 'time':
-                           init_res['time']}
+                       init_res['h3'], 'u': init_res['u'],
+                       'time': init_res['time']}
         return return_dict
 
 
@@ -192,6 +192,9 @@ def run_linearisation(model_path, parameters=None):
 
 def get_linear_quadratic_regulator(linear_model, q_matrix=numpy.identity(3),
                                    r_matrix=numpy.identity(1)):
+    ctrb_matrix = control.ctrb(linear_model.A, linear_model.B)
+    if ctrb_matrix.shape[0] != linear_model.A.shape[0]:
+        raise ValueError("System is not controllable!")
     k_matrix, s_matrix, e_matrix = control.lqr(linear_model.A, linear_model.B,
                                                q_matrix, r_matrix)
     return k_matrix, s_matrix, e_matrix
