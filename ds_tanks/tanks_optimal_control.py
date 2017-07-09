@@ -227,9 +227,17 @@ class TanksOptimalControl(Device):
 
     @Q.write
     def Q(self, value):
-        self.q_lqr = value
+        array_value = numpy.asarray(value)
+        if not numpy.allclose(array_value, array_value.T):
+            raise ValueError("The matrix given is not symmetric!")
+        elif numpy.all(numpy.linalg.eigvals(array_value) <= 1e-6):
+            raise ValueError("The matrix given doesn't have positive"
+                             " eigenvalues!")
+        else:
+            self.q_lqr = value
 
-    @attribute(dtype=float, doc="Control weight for LQR problem.")
+    @attribute(dtype=float, min_value=0.0, max_value=1000.0,
+               doc="Control weight for LQR problem.")
     def R(self):
         return self.r_lqr
 
