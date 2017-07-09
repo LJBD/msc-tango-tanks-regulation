@@ -49,8 +49,9 @@ class LinearModel(object):
 
 def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
                    h10=20.0, h20=20.0, h30=20.0, tank1_outflow=26.0,
-                   tank2_outflow=26.0, tank3_outflow=28.0,
-                   with_full_traj_obj=False, with_plots=False):
+                   tank2_outflow=26.0, tank3_outflow=28.0, alpha1=0.5,
+                   alpha2=0.5, alpha3=0.5, with_full_traj_obj=False,
+                   with_plots=False):
     """
     Run simulation of the tanks model.
 
@@ -61,9 +62,12 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     :param h10: initial condition of the level in 1st tank
     :param h20: initial condition of the level in 2nd tank
     :param h30: initial condition of the level in 3rd tank
-    :param tank1_outflow: outflow coefficient of the 1st tanks
-    :param tank2_outflow: outflow coefficient of the 2nd tanks
-    :param tank3_outflow: outflow coefficient of the 3rd tanks
+    :param tank1_outflow: outflow resistance of the 1st tanks
+    :param tank2_outflow: outflow resistance of the 2nd tanks
+    :param tank3_outflow: outflow resistance of the 3rd tanks
+    :param alpha1: flow coefficient of the 1st tank
+    :param alpha2: flow coefficient of the 2nd tank
+    :param alpha3: flow coefficient of the 3rd tank
     :param with_full_traj_obj: boolean specifying if the full trajectory should
     be returned
     :param with_plots: boolean specifying if the plots should be displayed
@@ -77,7 +81,8 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     set_model_parameters(simulation_model,
                          {"h10": h10, "h20": h20, "h30": h30,
                           "C1": tank1_outflow, "C2": tank2_outflow,
-                          "C3": tank3_outflow})
+                          "C3": tank3_outflow, "alpha1": alpha1,
+                          "alpha2": alpha2, "alpha3": alpha3})
     try:
         if hasattr(u, "__len__"):
             t = numpy.linspace(0.0, t_final, len(u))
@@ -114,15 +119,16 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
 
 def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
                      h1_final, h2_final, h3_final, max_control, sim_control,
-                     h10=20.0, h20=20.0, h30=20.0, ipopt_tolerance=1e-3,
+                     h10=20.0, h20=20.0, h30=20.0, alpha1=0.5, alpha2=0.5,
+                     alpha3=0.5, ipopt_tolerance=1e-3,
                      t_start=0, t_final=50.0):
     """
     Run optimisation of the tanks model.
 
     :param model_path: path to the Modelica/Optimica model
-    :param tank1_outflow: outflow coefficient of the 1st tanks
-    :param tank2_outflow: outflow coefficient of the 2nd tanks
-    :param tank3_outflow: outflow coefficient of the 3rd tanks
+    :param tank1_outflow: outflow resistance of the 1st tanks
+    :param tank2_outflow: outflow resistance of the 2nd tanks
+    :param tank3_outflow: outflow resistance of the 3rd tanks
     :param h1_final: wanted final value of the level in 1st tank
     :param h2_final: wanted final value of the level in 2nd tank
     :param h3_final: wanted final value of the level in 3rd tank
@@ -131,6 +137,9 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     :param h10: initial condition of the level in 1st tank
     :param h20: initial condition of the level in 2nd tank
     :param h30: initial condition of the level in 3rd tank
+    :param alpha1: flow coefficient of the 1st tank
+    :param alpha2: flow coefficient of the 2nd tank
+    :param alpha3: flow coefficient of the 3rd tank
     :param ipopt_tolerance: tolerance of the IPOPT solver
     :param t_start: starting time of the initial simulation
     :param t_final: final time of the initial simulation
@@ -144,7 +153,8 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     set_model_parameters(simulation_model,
                          {'u': sim_control, "h10": h10, "h20": h20, "h30": h30,
                           "C1": tank1_outflow, "C2": tank2_outflow,
-                          "C3": tank3_outflow})
+                          "C3": tank3_outflow, "alpha1": alpha1,
+                          "alpha2": alpha2, "alpha3": alpha3})
     init_result = simulation_model.simulate(start_time=t_start,
                                             final_time=t_final)
     # 3. Solve the optimal control problem
@@ -156,7 +166,8 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
                               'h1_final': h1_final, 'h2_final': h2_final,
                               'h3_final': h3_final, "C1": tank1_outflow,
                               "C2": tank2_outflow, "C3": tank3_outflow,
-                              'u_max': max_control})
+                              "alpha1": alpha1, "alpha2": alpha2,
+                              "alpha3": alpha3, 'u_max': max_control})
 
     # Set options
     opt_options = op.optimize_options()
@@ -174,9 +185,11 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
 
 def run_linearisation(model_path, h10=20.0, h20=20.0, h30=20.0,
                       tank1_outflow=26.0, tank2_outflow=26.0,
-                      tank3_outflow=28.0, u=0.0):
+                      tank3_outflow=28.0, alpha1=0.5, alpha2=0.5,
+                      alpha3=0.5, u=0.0):
     parameters = {"h10": h10, "h20": h20, "h30": h30, "C1": tank1_outflow,
-                  "C2": tank2_outflow, "C3": tank3_outflow, "u": u}
+                  "C2": tank2_outflow, "C3": tank3_outflow, "alpha1": alpha1,
+                  "alpha2": alpha2, "alpha3": alpha3, "u": u}
 
     nonlinear_jmu = compile_jmu("TanksPkg.ThreeTanks", model_path)
     nonlinear_model = JMUModel(nonlinear_jmu)
@@ -216,19 +229,6 @@ def get_squared_error(wanted_levels, obtained_levels):
     for i in range(len(wanted_levels)):
         error += pow(wanted_levels[i] - obtained_levels[i], 2)
     return error
-
-
-def get_initialisation_values(model_path, control_value):
-    # 1. Solve the initialization problem
-    # Compile the stationary initialization model into an FMU
-    init_fmu = compile_fmu("TanksPkg.ThreeTanksInit", model_path)
-    init_model = load_fmu(init_fmu)
-
-    init_model.set('u', control_value)
-    # Solve the initialization problem using FMI
-    init_model.initialize()
-    # Return stationary point
-    return init_model.get(['h1', 'h2', 'h3'])
 
 
 def get_model_path(model_file="opt_3_tanks.mop"):

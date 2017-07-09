@@ -74,11 +74,17 @@ class TanksOptimalControl(Device):
     MaxControl = device_property(dtype=float, default_value=100,
                                  doc="Maximum value of control")
     Tank1Outflow = device_property(dtype=float, default_value=26,
-                                   doc="Outflow coefficient of the 1st tank.")
+                                   doc="Outflow resistance of the 1st tank.")
     Tank2Outflow = device_property(dtype=float, default_value=26,
-                                   doc="Outflow coefficient of the 2nd tank.")
+                                   doc="Outflow resistance of the 2nd tank.")
     Tank3Outflow = device_property(dtype=float, default_value=28,
-                                   doc="Outflow coefficient of the 3rd tank.")
+                                   doc="Outflow resistance of the 3rd tank.")
+    Tank1FlowCoeff = device_property(dtype=float, default_value=0.5,
+                                     doc="Flow coefficient of the 1st tank.")
+    Tank2FlowCoeff = device_property(dtype=float, default_value=0.5,
+                                     doc="Flow coefficient of the 2nd tank.")
+    Tank3FlowCoeff = device_property(dtype=float, default_value=0.5,
+                                     doc="Flow coefficient of the 3rd tank.")
     SimulationFinalTime = device_property(dtype=float, default_value=50.0,
                                           doc="Final time for a simulation")
     TCPServerEnabled = device_property(dtype=bool, default_value=True,
@@ -373,7 +379,10 @@ class TanksOptimalControl(Device):
                         'h30': self.h3_initial,
                         'tank1_outflow': self.Tank1Outflow,
                         'tank2_outflow': self.Tank2Outflow,
-                        'tank3_outflow': self.Tank3Outflow}
+                        'tank3_outflow': self.Tank3Outflow,
+                        'alpha1': self.Tank1FlowCoeff,
+                        'alpha2': self.Tank2FlowCoeff,
+                        'alpha3': self.Tank3FlowCoeff}
         res = self.process_pool.apply_async(simulate_tanks,
                                             (self.model_path,), keyword_args,
                                             callback=self.simulation_ended)
@@ -395,7 +404,10 @@ class TanksOptimalControl(Device):
                             'h30': self.h3_initial,
                             'tank1_outflow': self.Tank1Outflow,
                             'tank2_outflow': self.Tank2Outflow,
-                            'tank3_outflow': self.Tank3Outflow}
+                            'tank3_outflow': self.Tank3Outflow,
+                            'alpha1': self.Tank1FlowCoeff,
+                            'alpha2': self.Tank2FlowCoeff,
+                            'alpha3': self.Tank3FlowCoeff}
             r = self.process_pool.apply_async(simulate_tanks,
                                               (self.model_path,),
                                               keyword_args,
@@ -421,6 +433,9 @@ class TanksOptimalControl(Device):
                                              self.h1_initial,
                                              self.h2_initial,
                                              self.h3_initial,
+                                             self.Tank1FlowCoeff,
+                                             self.Tank2FlowCoeff,
+                                             self.Tank3FlowCoeff,
                                              self.IPOPTTolerance,
                                              0.0,
                                              self.SimulationFinalTime),
@@ -494,6 +509,9 @@ class TanksOptimalControl(Device):
                                          tank1_outflow=self.Tank1Outflow,
                                          tank2_outflow=self.Tank2Outflow,
                                          tank3_outflow=self.Tank3Outflow,
+                                         alpha1=self.Tank1FlowCoeff,
+                                         alpha2=self.Tank2FlowCoeff,
+                                         alpha3=self.Tank3FlowCoeff,
                                          u=u)
         self.debug_stream(repr(linear_model))
         self.debug_stream(linear_model.get_linearisation_point_info())
