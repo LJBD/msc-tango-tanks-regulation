@@ -12,6 +12,10 @@ package TanksPkg
         parameter Modelica.SIunits.VolumeFlowRate C2 = 26.0 "2nd tank's outflow rate";
         parameter Modelica.SIunits.VolumeFlowRate C3 = 28.0 "3rd tank's outflow rate";
 
+        parameter Real alpha1 = 0.5 "1st tank's flow coefficient";
+        parameter Real alpha2 = 0.5 "2nd tank's flow coefficient";
+        parameter Real alpha3 = 0.5 "3rd tank's flow coefficient";
+
         parameter Modelica.SIunits.Length h10 = 20.0 "1st tank's initial value";
         parameter Modelica.SIunits.Length h20 = 20.0 "2nd tank's initial value";
         parameter Modelica.SIunits.Length h30 = 20.0 "3rd tank's initial value";
@@ -24,9 +28,9 @@ package TanksPkg
 
         replaceable Real u;
     equation
-        der(h1)=(u - C1*sqrt(h1))/a*w;
-        der(h2)=(C1*sqrt(h1) - C2*sqrt(h2))/(c*w + h2*b*w/h_max);
-        der(h3)=(C2*sqrt(h2) - C3*sqrt(h3))/(w*sqrt(R^2 - (R - h3)^2));
+        der(h1)=(u - C1*(h1^alpha1))/(a*w);
+        der(h2)=(C1*(h1^alpha1) - C2*(h2^alpha2))/(c*w + h2*b*w/h_max);
+        der(h3)=(C2*(h2^alpha2) - C3*(h3^alpha3))/(w*sqrt(R^2 - (R - h3)^2));
     end ThreeTanksNoInput;
 
     model ThreeTanks
