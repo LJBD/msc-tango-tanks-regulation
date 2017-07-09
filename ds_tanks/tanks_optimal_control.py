@@ -439,8 +439,14 @@ class TanksOptimalControl(Device):
     def SendControl(self):
         if self.SendControlMode == "SwitchTimes":
             if not self.switch_times:
+                self.info_stream("Normalising optimal control before sending.")
                 self.NormaliseOptimalControl()
-        if self.k_lqr == [0.0]:
+        else:
+            msg = "The full trajectory mode is not implemented yet."
+            self.warn_stream(msg)
+            raise NotImplementedError(msg)
+        if numpy.array_equal(self.k_lqr, [0.0]):
+            self.info_stream("Calculating LQR parameters before sending.")
             self.GetLQR()
         data_for_sending = self.get_data_for_ext_control()
         self.my_pipe_end.send(data_for_sending)
