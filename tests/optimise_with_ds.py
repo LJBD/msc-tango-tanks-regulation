@@ -22,9 +22,7 @@ def main(with_commands=True):
         opt_dev.command_inout_asynch("Optimise")
         sleep(20)
 
-        opt_dev.command_inout("GetLQR", timeout=5)
         opt_dev.command_inout_asynch("SendControl")
-        opt_dev.command_inout("NormaliseOptimalControl")
 
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
@@ -68,4 +66,4 @@ def get_matlab_data(device):
 
 
 if __name__ == '__main__':
-    main(False)
+    main(True)
