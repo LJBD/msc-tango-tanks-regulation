@@ -75,7 +75,7 @@ def get_matlab_data(device):
             0,
             switch_times[0],
             switch_times[1],
-            80.16,
+            65.9,
             k[0],
             k[1],
             k[2]]
