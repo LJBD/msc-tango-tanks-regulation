@@ -2,9 +2,9 @@ from __future__ import print_function
 from time import sleep
 
 try:
-    from tango import DeviceProxy, DevState, ApiUtil
+    from tango import DeviceProxy, DevState, ApiUtil, DevFailed
 except ImportError:
-    from PyTango import DeviceProxy, DevState, ApiUtil
+    from PyTango import DeviceProxy, DevState, ApiUtil, DevFailed
 from numpy import linspace
 
 from ds_tanks.tanks_utils import plot_with_optimal_trajectories, plot_results
@@ -13,16 +13,32 @@ from ds_tanks.tanks_utils import plot_with_optimal_trajectories, plot_results
 def main(with_commands=True):
     opt_dev = DeviceProxy("opt/ctrl/1")
     if with_commands:
+        q = [[0.1, 0.0, 0.0],
+             [0.0, 0.1, 0.0],
+             [0.0, 0.0, 0.1]]
         print("Setting initial values...")
-        opt_dev.write_read_attribute("H1Final", 15)
-        opt_dev.write_read_attribute("H2Final", 15)
-        opt_dev.write_read_attribute("H3Final", 9)
+        print("H1 final:", opt_dev.write_read_attribute("H1Final", 15).value)
+        print("H2 final:", opt_dev.write_read_attribute("H2Final", 15).value)
+        print("H3 final:", opt_dev.write_read_attribute("H3Final", 9).value)
+        print("Control weight:", opt_dev.write_read_attribute("R", 0.01).value)
+        print("State weights:", opt_dev.write_read_attribute("Q", q).value)
 
         print("Optimising...")
         opt_dev.command_inout_asynch("Optimise")
         sleep(20)
 
-        opt_dev.command_inout_asynch("SendControl")
+        try:
+            opt_dev.command_inout("SendControl")
+        except DevFailed as e:
+            if "Timeout" in e[1].desc:
+                print("Waiting for LQR results...")
+                sleep(5)
+            else:
+                print("Something went wrong!")
+                raise e
+        # Running verification...
+        opt_dev.command_inout("RunVerification")
+        sleep(8)
 
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
@@ -33,8 +49,7 @@ def main(with_commands=True):
         opt_h3 = opt_dev.read_attribute("OptimalH3").value
         plot_results(opt_h1, opt_h2, opt_h3, time_opt, opt_control,
                      "Optimised with TanksOptimalControl")
-        # Running verification...
-        opt_dev.command_inout_asynch("RunVerification")
+
         h1_sim = opt_dev.read_attribute("H1Simulated").value
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
