@@ -19,7 +19,7 @@ from pyfmi.fmi import load_fmu
 from ds_tanks.tcp_server import TCPTanksServer
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
     run_optimisation, signal_handler, run_linearisation, \
-    get_linear_quadratic_regulator
+    get_linear_quadratic_regulator, get_squared_error
 
 
 class TanksOptimalControl(Device):
@@ -62,6 +62,7 @@ class TanksOptimalControl(Device):
     k_lqr = [0.0]
     eigenvalues_lqr = [0.0]
     s_lqr = [[0.0], [0.0]]
+    verification_error = 0.0
 
     # ----------
     # Properties
@@ -255,6 +256,12 @@ class TanksOptimalControl(Device):
     def S(self):
         return self.s_lqr
 
+    @attribute(dtype=float, format='e',
+               doc="Error of verification. Calculated as a sum of squared"
+                   " differences between given and simulated values.")
+    def VerificationError(self):
+        return self.verification_error
+
     # ---------------
     # Derived methods
     # ---------------
@@ -389,10 +396,10 @@ class TanksOptimalControl(Device):
                             'tank1_outflow': self.Tank1Outflow,
                             'tank2_outflow': self.Tank2Outflow,
                             'tank3_outflow': self.Tank3Outflow}
-            res = self.process_pool.apply_async(simulate_tanks,
-                                                (self.model_path,),
-                                                keyword_args,
-                                                callback=self.simulation_ended)
+            r = self.process_pool.apply_async(simulate_tanks,
+                                              (self.model_path,),
+                                              keyword_args,
+                                              callback=self.verification_ended)
 
     @command
     @DebugIt()
@@ -459,7 +466,7 @@ class TanksOptimalControl(Device):
         data_for_sending = self.get_data_for_ext_control()
         self.my_pipe_end.send(data_for_sending)
 
-    @command(polling_period=100)
+    @command(polling_period=50)
     def GetDataFromDirectControl(self):
         if self.my_pipe_end.poll():
             attributes = {"H1Current": None, "H2Current": None,
@@ -541,6 +548,13 @@ class TanksOptimalControl(Device):
         self.t_sim = sim_result["time"]
         self.set_state(DevState.STANDBY)
         self.set_status("Simulation complete.")
+
+    def verification_ended(self, sim_result):
+        self.simulation_ended(sim_result)
+        wanted_levels = [self.h1_final, self.h2_final, self.h3_final]
+        obtained_levels = [self.h1_sim[-1], self.h2_sim[-1], self.h3_sim[-1]]
+        self.verification_error = get_squared_error(wanted_levels,
+                                                    obtained_levels)
 
     def set_outflow_values(self):
         self.init_model.set("C1", float(self.Tank1Outflow))

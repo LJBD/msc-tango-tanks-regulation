@@ -78,18 +78,21 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
                          {"h10": h10, "h20": h20, "h30": h30,
                           "C1": tank1_outflow, "C2": tank2_outflow,
                           "C3": tank3_outflow})
-
-    if hasattr(u, "__len__"):
-        t = numpy.linspace(0.0, t_final, len(u))
-        u_traj = numpy.transpose(numpy.vstack((t, u)))
-        print("CONTROL TRAJECTORY TO BE USED:\n", u_traj)
-        init_res = simulation_model.simulate(start_time=t_start,
-                                             final_time=t_final,
-                                             input=('u', u_traj))
-    else:
-        simulation_model.set('u', u)
-        init_res = simulation_model.simulate(start_time=t_start,
-                                             final_time=t_final)
+    try:
+        if hasattr(u, "__len__"):
+            t = numpy.linspace(0.0, t_final, len(u))
+            u_traj = numpy.transpose(numpy.vstack((t, u)))
+            print("CONTROL TRAJECTORY TO BE USED:\n", u_traj)
+            init_res = simulation_model.simulate(start_time=t_start,
+                                                 final_time=t_final,
+                                                 input=('u', u_traj))
+        else:
+            simulation_model.set('u', u)
+            init_res = simulation_model.simulate(start_time=t_start,
+                                                 final_time=t_final)
+    except Exception as e:
+        print(type(e))
+        return None
     # Extract variable profiles
     t_init_sim = init_res['time']
     h1_init_sim = init_res['h1']
@@ -206,6 +209,13 @@ def get_linear_quadratic_regulator(linear_model, q=numpy.identity(3),
 def set_model_parameters(model, parameters):
     for key, value in parameters.items():
         model.set(key, float(value))
+
+
+def get_squared_error(wanted_levels, obtained_levels):
+    error = 0.0
+    for i in range(len(wanted_levels)):
+        error += pow(wanted_levels[i] - obtained_levels[i], 2)
+    return error
 
 
 def get_initialisation_values(model_path, control_value):
