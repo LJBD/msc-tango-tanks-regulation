@@ -438,7 +438,7 @@ class TanksOptimalControl(Device):
     @DebugIt()
     def SendControl(self):
         if self.SendControlMode == "SwitchTimes":
-            if not self.switch_times:
+            if self.optimal_control[0] not in (0.0, 100.0):
                 self.info_stream("Normalising optimal control before sending.")
                 self.NormaliseOptimalControl()
         else:
@@ -583,16 +583,21 @@ class TanksOptimalControl(Device):
         self.switch_times = [index * time_step for index in switch_times]
 
     def get_data_for_ext_control(self):
+        final_control_index = 5
+        final_switch_time_index = 7
         data = [self.h1_final, self.h2_final, self.h3_final, self.t_opt,
                 self.optimal_control[0], 0.0, self.switch_times[0],
                 0, self.get_equilibrium_control(), self.k_lqr[0], self.k_lqr[1],
                 self.k_lqr[2]]
         try:
-            data[7] = self.switch_times[1]
+            data[final_switch_time_index] = self.switch_times[1]
         except IndexError:
-            data[7] = self.t_opt
-        if self.optimal_control[0] == 0:
-            data[5] = self.MaxControl
+            data[final_switch_time_index] = self.t_opt
+        if self.optimal_control[0] not in (0.0, 100.0):
+            raise ValueError("Optimal control not normalised (%f)!" %
+                             self.optimal_control[0])
+        elif self.optimal_control[0] == 0.0:
+            data[final_control_index] = self.MaxControl
         return data
 
 
