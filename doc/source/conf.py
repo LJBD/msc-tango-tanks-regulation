@@ -16,9 +16,22 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../'))
+os.environ["PYTHONPATH"] = ":/opt/tango/Python/::$PYTHONPATH"
+os.environ["JMODELICA_HOME"] = "/opt/tango"
+os.environ["IPOPT_HOME"] = "/opt/tango"
+os.environ["LD_LIBRARY_PATH"] = \
+    ":/opt/tango/lib/:/opt/tango/ThirdParty/Sundials/lib:\
+    /opt/tango/ThirdParty/CasADi/lib:$LD_LIBRARY_PATH"
+os.environ["SUNDIALS_HOME"] = "/opt/tango/ThirdParty/Sundials"
+os.environ["MODELICAPATH"] = "/opt/tango/ThirdParty/MSL"
+os.environ["CPPAD_HOME"] = "/opt/tango/ThirdParty/CppAD/"
+os.environ["SEPARATE_PROCESS_JVM"] = "/usr/lib/jvm/java-1.8.0-openjdk/"
+
+import ds_tanks
+import tests
 
 # -- General configuration ------------------------------------------------
 

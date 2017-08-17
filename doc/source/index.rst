@@ -11,6 +11,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   modules
+
+>>> from tango import DeviceProxy
+>>>
+>>> dev = DeviceProxy("a/b/c")
 
 
 Indices and tables
