@@ -69,8 +69,9 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
     :param alpha2: flow coefficient of the 2nd tank
     :param alpha3: flow coefficient of the 3rd tank
     :param with_full_traj_obj: boolean specifying if the full trajectory should
-    be returned
+           be returned
     :param with_plots: boolean specifying if the plots should be displayed
+
     :return: either a full trajectory object or a dictionary of trajectories
     """
     # 2. Compute initial guess trajectories by means of simulation

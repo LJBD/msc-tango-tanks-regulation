@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
+    "devicedoc"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

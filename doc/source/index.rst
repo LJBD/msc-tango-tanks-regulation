@@ -13,10 +13,6 @@ Contents:
 
    modules
 
->>> from tango import DeviceProxy
->>>
->>> dev = DeviceProxy("a/b/c")
-
 
 Indices and tables
 ==================
