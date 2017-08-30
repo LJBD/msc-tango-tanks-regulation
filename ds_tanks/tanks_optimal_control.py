@@ -222,7 +222,7 @@ class TanksOptimalControl(Device):
     def OptimalH3(self):
         return self.optimal_h3
 
-    @attribute(dtype=(float,), max_dim_x=20,
+    @attribute(dtype=(float,), max_dim_x=100,
                doc="Times of switching between min and max control.")
     def SwitchTimes(self):
         return self.switch_times
@@ -572,6 +572,7 @@ class TanksOptimalControl(Device):
             self.set_state(DevState.ALARM)
             self.set_status("Verification failed!")
             self.error_stream(repr(sim_result))
+            self.verification_error = 0
         else:
             self.simulation_ended(sim_result)
             wanted_levels = [self.h1_final, self.h2_final, self.h3_final]

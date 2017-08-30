@@ -38,6 +38,9 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         opt_dev.command_inout_asynch("Optimise")
         sleep(20)
 
+        if opt_dev.state() == DevState.ALARM:
+            print("Optimisation failed, exiting!")
+            return
         try:
             opt_dev.command_inout("SendControl")
         except DevFailed as e:
@@ -46,7 +49,7 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
                 sleep(5)
             else:
                 print("Something went wrong!")
-                raise e
+                print(e)
         # Running verification...
         opt_dev.command_inout("RunVerification")
         sleep(8)
@@ -112,6 +115,8 @@ def log_plotting_data(opt_dev, log_file="data_log.xlsx", title_prefix=""):
 
 def get_data_for_log(opt_dev):
     data = []
+    if "not found" in opt_dev.status():
+        return data
     opt_control = opt_dev.read_attribute("OptimalControl").value
     opt_time = opt_dev.read_attribute("OptimalTime").value
     time_opt = linspace(0.0, opt_time, len(opt_control))
@@ -151,4 +156,4 @@ def run_looped_optimisation(step=1, h_min=1, h_max=40):
 
 if __name__ == '__main__':
     # run_optimisation_through_ds(True)
-    run_looped_optimisation(10)
+    run_looped_optimisation(2, 1, 7)
