@@ -413,16 +413,18 @@ class TanksOptimalControl(Device):
                                               keyword_args,
                                               callback=self.verification_ended)
 
-    @command(dtype_in=bool, doc_in="Use current values of levels?")
+    @command(dtype_in=bool, doc_in="Use current values of levels as initial "
+                                   "values for optimisation?")
     @DebugIt()
     def Optimise(self, use_current_levels):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
         if use_current_levels:
-            self.info_stream("Using current values of levels as final values.")
-            self.h1_final = self.h1_current
-            self.h2_final = self.h2_current
-            self.h3_final = self.h3_current
+            self.info_stream("Using current values of levels as initial "
+                             "values.")
+            self.h1_initial = self.h1_current
+            self.h2_initial = self.h2_current
+            self.h3_initial = self.h3_current
         if not self.control_value:
             self.control_value = self.get_equilibrium_control()
         res = self.process_pool.apply_async(run_optimisation,
@@ -596,6 +598,7 @@ class TanksOptimalControl(Device):
         if opt_success:
             self.set_state(DevState.STANDBY)
             self.set_status("Optimal solution found!")
+            self.send_data_if_necessary()
         else:
             self.set_state(DevState.ALARM)
             self.set_status("Optimal solution not found")
@@ -652,6 +655,12 @@ class TanksOptimalControl(Device):
         elif self.optimal_control[0] == 0.0:
             data[final_control_index] = self.MaxControl
         return data
+
+    def send_data_if_necessary(self):
+        h1_init_w = self.H1Initial.get_write_value()
+        print("Write value of H1", h1_init_w)
+        if h1_init_w != self.h1_initial:
+            self.SendControl()
 
 
 TANKSOPTIMALCONTROL_NAME = TanksOptimalControl.__name__
