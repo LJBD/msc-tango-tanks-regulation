@@ -413,11 +413,16 @@ class TanksOptimalControl(Device):
                                               keyword_args,
                                               callback=self.verification_ended)
 
-    @command
+    @command(dtype_in=bool, doc_in="Use current values of levels?")
     @DebugIt()
-    def Optimise(self):
+    def Optimise(self, use_current_levels):
         self.set_state(DevState.RUNNING)
         self.set_status('Optimisation in progress...')
+        if use_current_levels:
+            self.info_stream("Using current values of levels as final values.")
+            self.h1_final = self.h1_current
+            self.h2_final = self.h2_current
+            self.h3_final = self.h3_current
         if not self.control_value:
             self.control_value = self.get_equilibrium_control()
         res = self.process_pool.apply_async(run_optimisation,

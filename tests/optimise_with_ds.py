@@ -35,7 +35,7 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
                 sleep(5)
             else:
                 break
-        opt_dev.command_inout_asynch("Optimise")
+        opt_dev.command_inout_asynch("Optimise", False)
         sleep(20)
 
         if opt_dev.state() == DevState.ALARM:
