@@ -14,7 +14,7 @@ except ImportError:
         DeviceMeta
 
 from pymodelica import compile_fmu
-from pyfmi.fmi import load_fmu
+from pyfmi.fmi import load_fmu, FMUException
 
 from ds_tanks.tcp_server import TCPTanksServer
 from ds_tanks.tanks_utils import get_model_path, simulate_tanks, \
@@ -568,11 +568,17 @@ class TanksOptimalControl(Device):
         self.set_status("Simulation complete.")
 
     def verification_ended(self, sim_result):
-        self.simulation_ended(sim_result)
-        wanted_levels = [self.h1_final, self.h2_final, self.h3_final]
-        obtained_levels = [self.h1_sim[-1], self.h2_sim[-1], self.h3_sim[-1]]
-        self.verification_error = get_squared_error(wanted_levels,
-                                                    obtained_levels)
+        if isinstance(sim_result, FMUException):
+            self.set_state(DevState.ALARM)
+            self.set_status("Verification failed!")
+            self.error_stream(repr(sim_result))
+        else:
+            self.simulation_ended(sim_result)
+            wanted_levels = [self.h1_final, self.h2_final, self.h3_final]
+            obtained_levels = [self.h1_sim[-1], self.h2_sim[-1],
+                               self.h3_sim[-1]]
+            self.verification_error = get_squared_error(wanted_levels,
+                                                        obtained_levels)
 
     def set_outflow_values(self):
         self.init_model.set("C1", float(self.Tank1Outflow))

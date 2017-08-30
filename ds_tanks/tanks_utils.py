@@ -5,7 +5,7 @@ import control
 import numpy
 import sys
 from matplotlib import pyplot
-from pyfmi.fmi import load_fmu
+from pyfmi.fmi import load_fmu, FMUException
 from pyjmi.linearization import linearize_dae
 from pymodelica import compile_fmu, compile_jmu
 from pyjmi import transfer_optimization_problem, JMUModel
@@ -96,9 +96,8 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
             simulation_model.set('u', u)
             init_res = simulation_model.simulate(start_time=t_start,
                                                  final_time=t_final)
-    except Exception as e:
-        print(type(e))
-        return None
+    except FMUException as e:
+        return e
     # Extract variable profiles
     t_init_sim = init_res['time']
     h1_init_sim = init_res['h1']
