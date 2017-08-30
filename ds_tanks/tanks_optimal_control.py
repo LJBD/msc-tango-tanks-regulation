@@ -593,6 +593,7 @@ class TanksOptimalControl(Device):
         else:
             self.set_state(DevState.ALARM)
             self.set_status("Optimal solution not found")
+            self.t_opt = -1
 
     def set_optimisation_result(self, res):
         # Extract variable profiles

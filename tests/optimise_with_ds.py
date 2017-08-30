@@ -30,6 +30,11 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         print("State weights:", opt_dev.write_read_attribute("Q", q).value)
 
         print("Optimising...")
+        for _ in range(0, 4):
+            if opt_dev.state() == DevState.RUNNING:
+                sleep(5)
+            else:
+                break
         opt_dev.command_inout_asynch("Optimise")
         sleep(20)
 
@@ -97,11 +102,12 @@ def log_plotting_data(opt_dev, log_file="data_log.xlsx", title_prefix=""):
         workbook = openpyxl.Workbook()
     title = str(datetime.datetime.time(datetime.datetime.now()))
     title = title[:title.rfind('.')].replace(":", "-")
-    title = title_prefix + title
+    title = title_prefix + " " + title
     worksheet = workbook.create_sheet(title=title)
     for i in range(len(data)):
         worksheet.append(data[i])
     workbook.save(log_file)
+    print("Saved data to '%s' worksheet of '%s'" % (title, log_file))
 
 
 def get_data_for_log(opt_dev):
@@ -130,14 +136,17 @@ def get_data_for_log(opt_dev):
     return data
 
 
-def run_looped_optimisation(step=1):
+def run_looped_optimisation(step=1, h_min=1, h_max=40):
     opt_dev = DeviceProxy("opt/ctrl/1")
-    for h_base in range(1, 5, step):
-        run_optimisation_through_ds(True, False, h_base, h_base, h_base,
-                                    opt_dev=opt_dev)
-        log_plotting_data(opt_dev, title_prefix="%d %d %d" % (h_base, h_base,
-                                                              h_base))
-        sleep(2)
+    for h1_final in range(h_min, h_max, step):
+        for h2_final in range(h_min, h_max, step):
+            for h3_final in range(h_min, h_max, step):
+                run_optimisation_through_ds(True, False, h1_final, h2_final,
+                                            h3_final, opt_dev=opt_dev)
+                log_plotting_data(opt_dev, title_prefix="%d %d %d" % (h1_final,
+                                                                      h2_final,
+                                                                      h3_final))
+                sleep(2)
 
 
 if __name__ == '__main__':
