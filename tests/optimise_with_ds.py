@@ -156,4 +156,4 @@ def run_looped_optimisation(step=1, h_min=1, h_max=40):
 
 if __name__ == '__main__':
     # run_optimisation_through_ds(True)
-    run_looped_optimisation(2, 1, 7)
+    run_looped_optimisation(2, 7, 13)
