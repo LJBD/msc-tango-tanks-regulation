@@ -51,8 +51,12 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
                 print("Something went wrong!")
                 print(e)
         # Running verification...
-        opt_dev.command_inout("RunVerification")
-        sleep(8)
+        try:
+            opt_dev.command_inout("RunVerification")
+            sleep(8)
+        except DevFailed as e:
+            print("Something went wrong...")
+            print(e)
 
     if opt_dev.state() == DevState.STANDBY:
         opt_control = opt_dev.read_attribute("OptimalControl").value
@@ -163,4 +167,4 @@ def loop_insides(h1_final, h2_final, h3_final, opt_dev):
 
 if __name__ == '__main__':
     # run_optimisation_through_ds(True)
-    run_looped_optimisation(1, distance=5)
+    run_looped_optimisation(step=1, min_val=10, distance=5)
