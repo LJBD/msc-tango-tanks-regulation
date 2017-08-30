@@ -141,19 +141,26 @@ def get_data_for_log(opt_dev):
     return data
 
 
-def run_looped_optimisation(step=1, h_min=1, h_max=40):
+def run_looped_optimisation(step=1, min_val=1, max_val=40, distance=6):
     opt_dev = DeviceProxy("opt/ctrl/1")
-    for h1_final in range(h_min, h_max, step):
-        for h2_final in range(h_min, h_max, step):
-            for h3_final in range(h_min, h_max, step):
-                run_optimisation_through_ds(True, False, h1_final, h2_final,
-                                            h3_final, opt_dev=opt_dev)
-                log_plotting_data(opt_dev, title_prefix="%d %d %d" % (h1_final,
-                                                                      h2_final,
-                                                                      h3_final))
-                sleep(2)
+    for i in range(int(max_val / distance)):
+        h_min = min_val + distance * i
+        h_max = h_min + distance if h_min + distance < max_val else max_val
+        for h1_final in range(h_min, h_max, step):
+            for h2_final in range(h_min, h_max, step):
+                for h3_final in range(h_min, h_max, step):
+                    loop_insides(h1_final, h2_final, h3_final, opt_dev)
+                    sleep(2)
+
+
+def loop_insides(h1_final, h2_final, h3_final, opt_dev):
+    run_optimisation_through_ds(True, False, h1_final, h2_final,
+                                h3_final, opt_dev=opt_dev)
+    log_plotting_data(opt_dev, title_prefix="%d %d %d" % (h1_final,
+                                                          h2_final,
+                                                          h3_final))
 
 
 if __name__ == '__main__':
     # run_optimisation_through_ds(True)
-    run_looped_optimisation(2, 7, 13)
+    run_looped_optimisation(1, distance=5)
