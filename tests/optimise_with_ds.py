@@ -1,4 +1,8 @@
 from __future__ import print_function
+
+import datetime
+import openpyxl
+import os
 from time import sleep
 
 try:
@@ -10,17 +14,19 @@ from numpy import linspace
 from ds_tanks.tanks_utils import plot_with_optimal_trajectories, plot_results
 
 
-def run_optimisation_through_ds(with_commands=True, with_plots=True):
-    opt_dev = DeviceProxy("opt/ctrl/1")
+def run_optimisation_through_ds(with_commands=True, with_plots=True,
+                                h1f=16, h2f=16, h3f=15, r=0.01, opt_dev=None):
+    if opt_dev is None:
+        opt_dev = DeviceProxy("opt/ctrl/1")
     if with_commands:
         q = [[0.1, 0.0, 0.0],
              [0.0, 0.1, 0.0],
              [0.0, 0.0, 0.1]]
         print("Setting initial values...")
-        print("H1 final:", opt_dev.write_read_attribute("H1Final", 16).value)
-        print("H2 final:", opt_dev.write_read_attribute("H2Final", 16).value)
-        print("H3 final:", opt_dev.write_read_attribute("H3Final", 15).value)
-        print("Control weight:", opt_dev.write_read_attribute("R", 0.01).value)
+        print("H1 final:", opt_dev.write_read_attribute("H1Final", h1f).value)
+        print("H2 final:", opt_dev.write_read_attribute("H2Final", h2f).value)
+        print("H3 final:", opt_dev.write_read_attribute("H3Final", h3f).value)
+        print("Control weight:", opt_dev.write_read_attribute("R", r).value)
         print("State weights:", opt_dev.write_read_attribute("Q", q).value)
 
         print("Optimising...")
@@ -82,5 +88,55 @@ def get_matlab_data(device):
     return data
 
 
+def log_plotting_data(opt_dev, log_file="data_log.xlsx"):
+    data = get_data_for_log(opt_dev)
+
+    if os.path.isfile(os.path.abspath(log_file)):
+        workbook = openpyxl.load_workbook(log_file)
+    else:
+        workbook = openpyxl.Workbook()
+    title = str(datetime.datetime.time(datetime.datetime.now()))
+    title = title[:title.rfind('.')].replace(":", "-")
+    worksheet = workbook.create_sheet(title=title)
+    for i in range(len(data)):
+        worksheet.append(data[i])
+    workbook.save(log_file)
+
+
+def get_data_for_log(opt_dev):
+    data = []
+    opt_control = opt_dev.read_attribute("OptimalControl").value
+    opt_time = opt_dev.read_attribute("OptimalTime").value
+    time_opt = linspace(0.0, opt_time, len(opt_control))
+    opt_h1 = opt_dev.read_attribute("OptimalH1").value
+    opt_h2 = opt_dev.read_attribute("OptimalH2").value
+    opt_h3 = opt_dev.read_attribute("OptimalH3").value
+    h1_sim = opt_dev.read_attribute("H1Simulated").value
+    h2_sim = opt_dev.read_attribute("H2Simulated").value
+    h3_sim = opt_dev.read_attribute("H3Simulated").value
+    time_sim = opt_dev.read_attribute("SimulationTime").value
+    data.append(opt_control)
+    data.append(opt_time)
+    data.append(time_opt)
+    data.append(opt_h1)
+    data.append(opt_h2)
+    data.append(opt_h3)
+    data.append(h1_sim)
+    data.append(h2_sim)
+    data.append(h3_sim)
+    data.append(time_sim)
+    return data
+
+
+def run_looped_optimisation(step=1):
+    opt_dev = DeviceProxy("opt/ctrl/1")
+    for h_base in range(1, 30, step):
+        run_optimisation_through_ds(True, False, h_base, h_base, h_base,
+                                    opt_dev=opt_dev)
+        log_plotting_data(opt_dev)
+        sleep(2)
+
+
 if __name__ == '__main__':
-    run_optimisation_through_ds(True)
+    # run_optimisation_through_ds(True)
+    run_looped_optimisation(10)
