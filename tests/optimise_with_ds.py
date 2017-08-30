@@ -88,7 +88,7 @@ def get_matlab_data(device):
     return data
 
 
-def log_plotting_data(opt_dev, log_file="data_log.xlsx"):
+def log_plotting_data(opt_dev, log_file="data_log.xlsx", title_prefix=""):
     data = get_data_for_log(opt_dev)
 
     if os.path.isfile(os.path.abspath(log_file)):
@@ -97,6 +97,7 @@ def log_plotting_data(opt_dev, log_file="data_log.xlsx"):
         workbook = openpyxl.Workbook()
     title = str(datetime.datetime.time(datetime.datetime.now()))
     title = title[:title.rfind('.')].replace(":", "-")
+    title = title_prefix + title
     worksheet = workbook.create_sheet(title=title)
     for i in range(len(data)):
         worksheet.append(data[i])
@@ -115,25 +116,27 @@ def get_data_for_log(opt_dev):
     h2_sim = opt_dev.read_attribute("H2Simulated").value
     h3_sim = opt_dev.read_attribute("H3Simulated").value
     time_sim = opt_dev.read_attribute("SimulationTime").value
-    data.append(opt_control)
-    data.append(opt_time)
-    data.append(time_opt)
-    data.append(opt_h1)
-    data.append(opt_h2)
-    data.append(opt_h3)
-    data.append(h1_sim)
-    data.append(h2_sim)
-    data.append(h3_sim)
-    data.append(time_sim)
+    data.append(opt_control.tolist())
+    data.append((opt_time,))
+    data.append(time_opt.tolist())
+    data.append(opt_h1.tolist())
+    data.append(opt_h2.tolist())
+    data.append(opt_h3.tolist())
+    data.append(h1_sim.tolist())
+    data.append(h2_sim.tolist())
+    data.append(h3_sim.tolist())
+    data.append(time_sim.tolist())
+    data.append((opt_dev.read_attribute("VerificationError").value,))
     return data
 
 
 def run_looped_optimisation(step=1):
     opt_dev = DeviceProxy("opt/ctrl/1")
-    for h_base in range(1, 30, step):
+    for h_base in range(1, 5, step):
         run_optimisation_through_ds(True, False, h_base, h_base, h_base,
                                     opt_dev=opt_dev)
-        log_plotting_data(opt_dev)
+        log_plotting_data(opt_dev, title_prefix="%d %d %d" % (h_base, h_base,
+                                                              h_base))
         sleep(2)
 
 
