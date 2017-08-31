@@ -73,7 +73,7 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         h2_sim = opt_dev.read_attribute("H2Simulated").value
         h3_sim = opt_dev.read_attribute("H3Simulated").value
         time_sim = opt_dev.read_attribute("SimulationTime").value
-        print(get_matlab_data(opt_dev))
+        # print(get_matlab_data(opt_dev))
         if with_plots:
             plot_with_optimal_trajectories(time_opt, time_sim, h1_sim, h2_sim,
                                            h3_sim, opt_h1, opt_h2, opt_h3,
@@ -154,7 +154,7 @@ def run_looped_optimisation(step=1, min_val=1, max_val=40, distance=6):
             for h2_final in range(h_min, h_max, step):
                 for h3_final in range(h_min, h_max, step):
                     loop_insides(h1_final, h2_final, h3_final, opt_dev)
-                    sleep(2)
+                    # sleep(2)
 
 
 def loop_insides(h1_final, h2_final, h3_final, opt_dev):
@@ -167,4 +167,4 @@ def loop_insides(h1_final, h2_final, h3_final, opt_dev):
 
 if __name__ == '__main__':
     # run_optimisation_through_ds(True)
-    run_looped_optimisation(step=1, min_val=10, distance=5)
+    run_looped_optimisation(step=1, min_val=16, distance=4)
