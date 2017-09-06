@@ -278,8 +278,6 @@ class TanksOptimalControl(Device):
     def FEMElements(self, value):
         self.number_of_elements = value
 
-    # TODO: add elements number attribute and add it to optimisation execution
-
     # ---------------
     # Derived methods
     # ---------------
