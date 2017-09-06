@@ -6,9 +6,9 @@ import numpy
 import sys
 from matplotlib import pyplot
 from pyfmi.fmi import load_fmu, FMUException
-from pyjmi.linearization import linearize_dae
-from pymodelica import compile_fmu, compile_jmu
-from pyjmi import transfer_optimization_problem, JMUModel
+# from pyjmi.linearization import linearize_dae
+from pymodelica import compile_fmu # , compile_jmu
+from pyjmi import transfer_optimization_problem # , JMUModel
 
 U_MAX = 100.0
 
@@ -121,7 +121,7 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
                      h1_final, h2_final, h3_final, max_control, sim_control,
                      h10=20.0, h20=20.0, h30=20.0, alpha1=0.5, alpha2=0.5,
                      alpha3=0.5, ipopt_tolerance=1e-3,
-                     t_start=0, t_final=50.0):
+                     t_start=0, t_final=50.0, elements_number=50):
     """
     Run optimisation of the tanks model.
 
@@ -143,6 +143,8 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
     :param ipopt_tolerance: tolerance of the IPOPT solver
     :param t_start: starting time of the initial simulation
     :param t_final: final time of the initial simulation
+    :param elements_number: number of elements for Finite Elements Method
+
     :return: a dictionary with optimisation results
     """
     # 2. Compute initial guess trajectories by means of simulation
@@ -171,7 +173,7 @@ def run_optimisation(model_path, tank1_outflow, tank2_outflow, tank3_outflow,
 
     # Set options
     opt_options = op.optimize_options()
-    # opt_options['n_e'] = 80  # Number of elements
+    opt_options['n_e'] = elements_number
     opt_options['variable_scaling'] = False
     opt_options['init_traj'] = init_result
     opt_options['IPOPT_options']['tol'] = ipopt_tolerance
@@ -305,11 +307,14 @@ def signal_handler(signal, frame, connection=None, kill_event=None, pool=None,
         print(">>> Closing connection...")
         connection.close()
     if kill_event:
+        print(">>> Setting kill event...")
         kill_event.set()
     if pool:
+        print(">>> Closing the pool threads...")
         pool.close()
-        pool.join(1)
+        pool.join()
     if process:
+        print(">>> Joining the process...")
         process.join(2)
     if logger:
         logger("Received SIGINT, shut down threads, going down.")

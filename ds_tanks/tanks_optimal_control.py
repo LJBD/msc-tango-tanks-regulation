@@ -63,6 +63,7 @@ class TanksOptimalControl(Device):
     eigenvalues_lqr = [0.0]
     s_lqr = [[0.0], [0.0]]
     verification_error = 0.0
+    number_of_elements = 50
 
     # ----------
     # Properties
@@ -73,11 +74,11 @@ class TanksOptimalControl(Device):
                                 doc="Name of a file containing model.")
     MaxControl = device_property(dtype=float, default_value=100,
                                  doc="Maximum value of control")
-    Tank1Outflow = device_property(dtype=float, default_value=26,
+    Tank1Outflow = device_property(dtype=float, default_value=16,
                                    doc="Outflow resistance of the 1st tank.")
-    Tank2Outflow = device_property(dtype=float, default_value=26,
+    Tank2Outflow = device_property(dtype=float, default_value=16,
                                    doc="Outflow resistance of the 2nd tank.")
-    Tank3Outflow = device_property(dtype=float, default_value=28,
+    Tank3Outflow = device_property(dtype=float, default_value=18,
                                    doc="Outflow resistance of the 3rd tank.")
     Tank1FlowCoeff = device_property(dtype=float, default_value=0.5,
                                      doc="Flow coefficient of the 1st tank.")
@@ -268,6 +269,17 @@ class TanksOptimalControl(Device):
     def VerificationError(self):
         return self.verification_error
 
+    @attribute(dtype=int, min_value=0, max_value=200,
+               doc="Number of elements for Finite Elements Method")
+    def FEMElements(self):
+        return self.number_of_elements
+
+    @FEMElements.write
+    def FEMElements(self, value):
+        self.number_of_elements = value
+
+    # TODO: add elements number attribute and add it to optimisation execution
+
     # ---------------
     # Derived methods
     # ---------------
@@ -445,7 +457,8 @@ class TanksOptimalControl(Device):
                                              self.Tank3FlowCoeff,
                                              self.IPOPTTolerance,
                                              0.0,
-                                             self.SimulationFinalTime),
+                                             self.SimulationFinalTime,
+                                             self.number_of_elements),
                                             callback=self.optimisation_ended)
 
     @command

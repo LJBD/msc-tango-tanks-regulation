@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import datetime
-import openpyxl
+# import openpyxl
 import os
 from time import sleep
 
@@ -41,15 +41,15 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         if opt_dev.state() == DevState.ALARM:
             print("Optimisation failed, exiting!")
             return
-        try:
-            opt_dev.command_inout("SendControl")
-        except DevFailed as e:
-            if "Timeout" in e[1].desc:
-                print("Waiting for LQR results...")
-                sleep(5)
-            else:
-                print("Something went wrong!")
-                print(e)
+        # try:
+        #     opt_dev.command_inout("SendControl")
+        # except DevFailed as e:
+        #     if "Timeout" in e[1].desc:
+        #         print("Waiting for LQR results...")
+        #         sleep(5)
+        #     else:
+        #         print("Something went wrong!")
+        #         print(e)
         # Running verification...
         try:
             opt_dev.command_inout("RunVerification")
@@ -166,5 +166,5 @@ def loop_insides(h1_final, h2_final, h3_final, opt_dev):
 
 
 if __name__ == '__main__':
-    # run_optimisation_through_ds(True)
-    run_looped_optimisation(step=1, min_val=16, distance=4)
+    run_optimisation_through_ds(False, True)
+    # run_looped_optimisation(step=1, min_val=16, distance=4)
