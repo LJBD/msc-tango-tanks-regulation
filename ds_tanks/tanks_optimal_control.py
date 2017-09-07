@@ -269,7 +269,7 @@ class TanksOptimalControl(Device):
     def VerificationError(self):
         return self.verification_error
 
-    @attribute(dtype=int, min_value=0, max_value=200,
+    @attribute(dtype=int, min_value=0, max_value=1000,
                doc="Number of elements for Finite Elements Method")
     def FEMElements(self):
         return self.number_of_elements

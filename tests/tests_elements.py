@@ -61,11 +61,13 @@ def get_from_csv(log_file="elements.csv"):
     opt_times = []
     raw_errors = []
     norm_errors = []
+    last_time = 152.35000000000002
     with open(log_file, 'rb') as f:
         reader = csv.reader(f)
         for row in reader:
             elements.append(row[0])
-            opt_times.append(row[2])
+            opt_times.append(float(row[2]) - last_time)
+            last_time = float(row[2])
             raw_errors.append(row[3])
             norm_errors.append(row[4])
     return elements, opt_times, raw_errors, norm_errors
@@ -75,7 +77,7 @@ def plot_elements_data(elements, opt_times, raw_errors, norm_errors):
     pyplot.close(1)
     pyplot.figure(1)
     pyplot.subplot(2, 1, 1)
-    pyplot.plot(elements, raw_errors, 'ro', elements, norm_errors, 'go')
+    pyplot.plot(elements, raw_errors, 'ro-', elements, norm_errors, 'go-')
     pyplot.grid()
     pyplot.legend((u'Błędy surowego sterowania', u'Błędy znormalizowanego '
                                                  u'sterowania'))
@@ -91,9 +93,9 @@ def plot_elements_data(elements, opt_times, raw_errors, norm_errors):
 
 def main():
     dev = DeviceProxy('opt/ctrl/1')
-    for i in range(50, int(sys.argv[1]), 10):
+    for i in range(50, int(sys.argv[1]), 50):
         print("Setting %d elements..." % i)
-        apply_values(dev, elements=i)
+        apply_values(dev, 1, 15, elements=i)
         dev.Optimise(False)
         sleep(15)
         dev.RunVerification()
