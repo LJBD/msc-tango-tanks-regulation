@@ -61,7 +61,7 @@ def get_from_csv(log_file="elements.csv"):
     opt_times = []
     raw_errors = []
     norm_errors = []
-    last_time = 152.35000000000002
+    last_time = 0
     with open(log_file, 'rb') as f:
         reader = csv.reader(f)
         for row in reader:
@@ -97,7 +97,7 @@ def main():
         print("Setting %d elements..." % i)
         apply_values(dev, 1, 15, elements=i)
         dev.Optimise(False)
-        sleep(15)
+        sleep(60)
         dev.RunVerification()
         sleep(20)
         print_values(dev)
