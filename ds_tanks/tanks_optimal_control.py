@@ -623,10 +623,10 @@ class TanksOptimalControl(Device):
         self.optimal_control = res['u']
         time_res = res['time']
         self.t_opt = time_res[-1]
-        h1_check = self.optimal_h1[-1] - self.h1_final < self.IPOPTTolerance
-        h2_check = self.optimal_h2[-1] - self.h2_final < self.IPOPTTolerance
-        h3_check = self.optimal_h3[-1] - self.h3_final < self.IPOPTTolerance
-        return h1_check and h2_check and h3_check
+        h1_chk = abs(self.optimal_h1[-1] - self.h1_final) < self.IPOPTTolerance
+        h2_chk = abs(self.optimal_h2[-1] - self.h2_final) < self.IPOPTTolerance
+        h3_chk = abs(self.optimal_h3[-1] - self.h3_final) < self.IPOPTTolerance
+        return h1_chk and h2_chk and h3_chk
 
     @DebugIt(show_args=True, show_ret=True)
     def check_equilibrium(self, control):

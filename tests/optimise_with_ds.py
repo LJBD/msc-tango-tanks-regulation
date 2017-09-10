@@ -67,7 +67,7 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         opt_h3 = opt_dev.read_attribute("OptimalH3").value
         if with_plots:
             plot_results(opt_h1, opt_h2, opt_h3, time_opt, opt_control,
-                         "Optimised with TanksOptimalControl")
+                         "Trajektorie optymalne")
 
         h1_sim = opt_dev.read_attribute("H1Simulated").value
         h2_sim = opt_dev.read_attribute("H2Simulated").value

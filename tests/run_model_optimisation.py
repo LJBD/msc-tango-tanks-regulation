@@ -90,7 +90,7 @@ def main():
 
     # Plot the results
     plot_results(h1_res, h2_res, h3_res, time_res, u_res,
-                 title="Optimised trajectories")
+                 title="Trajektorie optymalne")
 
     normalised_u = []
     for val in u_res:
