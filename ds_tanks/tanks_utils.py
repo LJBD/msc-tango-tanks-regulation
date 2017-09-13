@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import print_function
 import os
 import logging
@@ -90,7 +91,8 @@ def simulate_tanks(model_path, u=U_MAX, t_start=0.0, t_final=50.0,
             u_traj = numpy.transpose(numpy.vstack((t, u)))
             init_res = simulation_model.simulate(start_time=t_start,
                                                  final_time=t_final,
-                                                 input=('u', u_traj))
+                                                 input=('u', u_traj),
+                                                 options={"ncp": len(u) - 1})
         else:
             simulation_model.set('u', u)
             init_res = simulation_model.simulate(start_time=t_start,
@@ -287,6 +289,34 @@ def plot_with_optimal_trajectories(time_res, time_sim, h1, h2, h3, h1_opt,
     pyplot.plot(time_res, u_opt)
     pyplot.grid(True)
     pyplot.ylabel("Sterowanie optymalne")
+    pyplot.xlabel('Czas [s]')
+    pyplot.show()
+
+
+def plot_errors(h1_error, h2_error, h3_error, time_opt, opt_ctrl):
+    pyplot.close(4)
+    pyplot.figure(5)
+    pyplot.subplot(4, 1, 1)
+    pyplot.plot(time_opt, h1_error)
+    pyplot.grid(True)
+    pyplot.ylabel(u"Błąd h1 [cm]")
+    pyplot.title(u"Błędy trajektorii optymalnych po weryfikacji")
+
+    pyplot.subplot(4, 1, 2)
+    pyplot.plot(time_opt, h2_error)
+    pyplot.grid(True)
+    pyplot.ylabel(u"Błąd h2 [cm]")
+
+    pyplot.subplot(4, 1, 3)
+    pyplot.plot(time_opt, h3_error)
+    pyplot.grid(True)
+    pyplot.ylabel(u"Błąd h3 [cm]")
+
+    pyplot.subplot(4, 1, 4)
+    pyplot.plot(time_opt, opt_ctrl)
+    pyplot.grid(True)
+    pyplot.ylabel("Sterowanie optymalne")
+
     pyplot.xlabel('Czas [s]')
     pyplot.show()
 

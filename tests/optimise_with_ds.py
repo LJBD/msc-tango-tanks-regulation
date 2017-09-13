@@ -11,7 +11,8 @@ except ImportError:
     from PyTango import DeviceProxy, DevState, ApiUtil, DevFailed
 from numpy import linspace
 
-from ds_tanks.tanks_utils import plot_with_optimal_trajectories, plot_results
+from ds_tanks.tanks_utils import plot_with_optimal_trajectories, plot_results, \
+    plot_errors
 
 
 def run_optimisation_through_ds(with_commands=True, with_plots=True,
@@ -74,10 +75,19 @@ def run_optimisation_through_ds(with_commands=True, with_plots=True,
         h3_sim = opt_dev.read_attribute("H3Simulated").value
         time_sim = opt_dev.read_attribute("SimulationTime").value
         # print(get_matlab_data(opt_dev))
+        h1_error = []
+        h2_error = []
+        h3_error = []
+        for i in range(len(h1_sim)):
+            h1_error.append(abs(h1_sim[i] - opt_h1[i]))
+            h2_error.append(abs(h2_sim[i] - opt_h2[i]))
+            h3_error.append(abs(h3_sim[i] - opt_h3[i]))
         if with_plots:
             plot_with_optimal_trajectories(time_opt, time_sim, h1_sim, h2_sim,
                                            h3_sim, opt_h1, opt_h2, opt_h3,
                                            opt_control)
+            plot_errors(h1_error, h2_error, h3_error,
+                        time_opt, opt_control)
     else:
         print("Wrong state, exiting!")
 
