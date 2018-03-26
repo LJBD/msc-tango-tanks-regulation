@@ -8,14 +8,16 @@ Requirements
 ------------
 
 1. Tango 9.2.x and PyTango 9.2.x
-2. JModelica with its requirements:
-    1. IPOPT 3.x (the higher the better)
-    2. 
-TODO: List other requirements
+2. JModelica 1.15+
+
+Those can be found within a Docker image in [this repository](https://github.com/ljbd/msc-tango-jmodelica-docker).
+
 
 What is inside
 --------------
-TODO: write short descriptions of the packages
+1. Optimica model for the system of cascading tanks.
+1. Tango Controls Device Server for simulating and optimising said system.
+1. Test scripts to automate generating results.
 
 Usage
 -----
